@@ -1,0 +1,88 @@
+{
+    roles : {
+        Villager: {
+            count: 1,
+            first_victim: true,
+        },
+        Seer: {
+            count: 1,
+            first_victim: true,
+        },
+        Priest: {
+            count: 1,
+            first_victim: true,
+        },
+        Knight: {
+            count: 1,
+            first_victim: true,
+        },
+        Traitor: {
+            count: 1,
+            first_victim: true,
+        },
+        Werewolf: {
+            count: 1, 
+            first_victim: false,
+        },
+        Mason: {
+            count: 2, 
+            first_victim: false,
+        },
+        Dictator: {
+            count: 1, 
+            first_victim: false,
+        },
+        Baker: {
+            count: 1, 
+            first_victim: false,
+        },
+        Communicatable: {
+            count: 1, 
+            first_victim: false,
+        },
+        Fanatic: {
+            count: 1, 
+            first_victim: false,
+        },
+    },
+
+    first_victim_count : 1,
+    first_sight : "random_white",
+    continuous_guard  : false,
+    confirmation_sec  : 30,
+
+    wish_role_rand_weight : 3,
+    wish_role_time        : 30,
+
+    first_night : {
+        first_night_time : 60,
+        alert_times : [],
+    },
+
+    day : {
+        day_time       : 600,
+        reduction_time :  60,
+        alert_times : [],
+        cut_time    : "majority",
+    },
+
+    night : {
+        length      : 180,
+        alert_times : [],
+    },
+
+    after_game : {
+        length      : 3000,
+        alert_times : [],
+    },
+
+    vote : {
+        length      : 60,
+        alert_times : [],
+        talk        : false,
+        place       : "after_open",
+
+        revote_num  : 0,
+        when_even   : "random",
+    },
+}

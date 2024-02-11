@@ -1,0 +1,5 @@
+{
+  system_lang     : "ja",
+  token1          : "$DISCORD_WEREWOLF_BOT_TOKEN_1",
+  system_GM  : ["$DISCORD_WEREWOLF_SYSTEM_GM"],
+}
