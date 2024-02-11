@@ -5,10 +5,10 @@ Tumoi Yorozu さんのGM bot （https://github.com/TumoiYorozu/DiscordWerewolf.t
 
 主にテキスト人狼を想定した bot です.
 
-# Project status
+## Project status
 * in Progress (2024/02/11)
 
-# 暫定的な変更点
+## 暫定的な変更点
 * 欠けありに対応
 * 複数人死亡に対応
 * 共有部屋を追加
