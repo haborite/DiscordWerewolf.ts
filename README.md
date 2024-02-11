@@ -1,7 +1,7 @@
 
 Discord 上で人狼ゲームを行うための GM bot です．
 
-Tumoi Yorozu さんのGM bot （https://github.com/TumoiYorozu/DiscordWerewolf.ts）のカスタム版です。
+Tumoi Yorozu さんのGM bot （ https://github.com/TumoiYorozu/DiscordWerewolf.ts ）のカスタム版です。
 
 主にテキスト人狼を想定した bot です.
 
