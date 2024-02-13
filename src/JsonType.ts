@@ -140,17 +140,13 @@ export const LangTypeFormat = obj({
         room_GameLog     : str,
         room_DebugLog    : str,
         room_Living      : str,
-        room_LivingVoice : str,
         room_Dead        : str,
-        room_DeadVoice   : str,
     }),
 
     sys
     :obj({
         cmd_make_room    : arr(str),
         cmd_delete_room  : arr(str),
-        cmd_link_voice   : arr(str),
-        cmd_unlink_voice : arr(str),
         cmd_list_GM      : arr(str),
         cmd_list_Dev     : arr(str),
         cmd_add_GM       : arr(str),
@@ -196,10 +192,6 @@ export const LangTypeFormat = obj({
         GM_removed  : str,
         Dev_removed : str,
         Need_at_least_1_GM  : str,
-
-        Link_Voice : str,
-        Link_Voice_Err : str,
-        Unlink_Voice   : str,
 
         stop_timer     : str,
         restart_timer  : str,
@@ -591,37 +583,7 @@ export const ServerSettingsFormat = obj({
 
     system_lang     : str,
     token1          : str,
-    // token2          : str,
-    // auto_voice_link : bool,
     system_GM       : arr(str),
-    
-    /*
-    http
-    :obj({
-        addr         : str,
-        ip           : str,
-        http_port    : str,
-        template_dir : str,
-        game_html    : str,
-        white_list   : arr(str),
-    }),
-    se
-    :obj({
-        times : arr(tuple(num, str)),
-        co    : str,
-        call  : str,
-    }),
 
-    music
-    :obj({
-        opening     : str,
-        first_night : str,
-        day_time    : str,
-        vote        : str,
-        night       : str,
-        good_win    : str,
-        evil_win    : str,
-    }),
-    */
 });
 export type ServerSettingsType = TsType<typeof ServerSettingsFormat>;
