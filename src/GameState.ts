@@ -530,11 +530,8 @@ export default class GameState {
         }
         for(const r in this.defaultRoles){
             const t = getDefaultTeams(r as Role);
-            if (this.possibleFirstVictimRoles[r]) {
-                team[t] += this.emoText[r] + this.roleText[r] + " : " + this.defaultRoles[r] + "  (" + "欠け有😨" + ")" + "\n";
-            } else {
-                team[t] += this.emoText[r] + this.roleText[r] + " : " + this.defaultRoles[r] + "  (" + "欠け無😌" + ")" + "\n";
-            }
+            const first_victim_txt = "  (" + this.langTxt.rule.first_victim.txt + this.langTxt.rule.first_victim[this.possibleFirstVictimRoles[r] ? "yes" : "no"] + ")" + "\n"
+            team[t] += this.emoText[r] + this.roleText[r] + " : " + this.defaultRoles[r] + first_victim_txt;
             team_cnt[t] += this.defaultRoles[r];
             all_cnt += this.defaultRoles[r];
         }
@@ -690,6 +687,7 @@ export default class GameState {
                 addPerm(this.guild.id, Perm.ReadOnly, permLiving   );
                 addPerm(this.guild.id, Perm.NoAccess, permDead     );
                 addPerm(this.guild.id, Perm.RW      , permAudience );
+                addPerm(this.guild.id, Perm.NoAccess, permIndividual);
                 for (const uid in this.members) {
                     addPerm(uid, Perm.NoAccess, permAudience);
                     addPerm(uid, Perm.RW,       permLiving);
@@ -713,6 +711,7 @@ export default class GameState {
                 addPerm(this.guild.id, Perm.ReadOnly, permLiving   );
                 addPerm(this.guild.id, Perm.NoAccess, permDead     );
                 addPerm(this.guild.id, Perm.RW      , permAudience );
+                addPerm(this.guild.id, Perm.NoAccess, permIndividual);
                 for(const uid in this.members) {
                     addPerm(uid, Perm.NoAccess, permAudience);
                     addPerm(uid, Perm.ReadOnly, permLiving);
@@ -736,6 +735,7 @@ export default class GameState {
                 addPerm(this.guild.id, Perm.ReadOnly, permLiving   );
                 addPerm(this.guild.id, Perm.NoAccess, permDead     );
                 addPerm(this.guild.id, Perm.RW      , permAudience );
+                addPerm(this.guild.id, Perm.NoAccess, permIndividual);
                 for(const uid in this.members) {
                     addPerm(uid, Perm.NoAccess, permAudience);
                     if(this.members[uid].isLiving) {
@@ -775,6 +775,7 @@ export default class GameState {
                 addPerm(this.guild.id, Perm.ReadOnly, permLiving   );
                 addPerm(this.guild.id, Perm.NoAccess, permDead     );
                 addPerm(this.guild.id, Perm.RW      , permAudience );
+                addPerm(this.guild.id, Perm.NoAccess, permIndividual);
                 for(const uid in this.members) {
                     addPerm(uid, Perm.NoAccess, permAudience);
                     if(this.members[uid].isLiving) {
@@ -816,6 +817,7 @@ export default class GameState {
                 addPerm(this.guild.id, Perm.ReadOnly, permLiving   );
                 addPerm(this.guild.id, Perm.NoAccess, permDead     );
                 addPerm(this.guild.id, Perm.RW      , permAudience );
+                addPerm(this.guild.id, Perm.NoAccess, permIndividual);
                 for(const uid in this.members) {
                     addPerm(uid, Perm.NoAccess, permAudience);
                     if(this.members[uid].isLiving) {
@@ -874,10 +876,12 @@ export default class GameState {
 
         // TO DO
         for (const uid in this.members) {
+            const _permIndividual = structuredClone(permIndividual);
             console.log("to do");
+            addPerm(uid, Perm.RW, _permIndividual);
             const uch = this.members[uid].uchannel;
             if (uch != null) {
-                uch.permissionOverwrites.set(permIndividual);
+                uch.permissionOverwrites.set(_permIndividual);
             }
         }
 
@@ -1844,7 +1848,7 @@ export default class GameState {
         if (this.killNext.length == 1) {
             const p = this.killNext[0];
             const uid = p[0];
-            const uname = this.members[uid] ? this.members[uid].nickname : "namae-ga-wakaran";            
+            const uname = this.members[uid] ? this.members[uid].nickname : this.langTxt.p4.anonymous_name;            
             const thumb = this.members[uid] ? this.members[uid].user.displayAvatarURL() : "" ;
             const embed = new Discord.EmbedBuilder({
                 author    : {name: format(this.langTxt.p4.day_number, {n : this.dayNumber})},
@@ -1868,13 +1872,12 @@ export default class GameState {
             const players = this.killNext;
             const uids = players.map((player) => player[0]);
             const unames = uids.map((uid, idx) => {
-                if (uid === "0") {
-                    return "モブ山" + (idx + 1);
-                } else {
+                if (this.members[uid]) {
                     return this.members[uid].nickname
+                } else {
+                    return this.langTxt.p4.anonymous_name + (idx + 1)
                 }
             });
-
             const title_txt: string = unames.reduce(
                 (acc: string, val: string) => acc + format(this.langTxt.p4.killed_morning, {user : val}) + "\n",
                 "",
@@ -2433,7 +2436,7 @@ export default class GameState {
             interaction.reply(txt);
             this.channels.Living.send(txt);
             if (now >= req) {
-                this.channels.Living.send(this.langTxt.p4.cut_time_approved);
+                this.channels.Living.send(format(this.langTxt.p4.cut_time_approved, this.ruleSetting.day.reduction_time));
                 this.remTime = Math.min(12, this.remTime);
             }
         }

@@ -75,13 +75,18 @@
         welcome_dead   : "{user} さんは死亡し，霊界へやってきました．",
         no_result      : "（結果なし）",
 
-        cuttime_desc  : "生存者全員が時間短縮ボタンを押すことで、現在のフェーズを終わりにできます。",
+        cuttime_desc  : "既定の人数が時間短縮ボタンを押すことで、現在のフェーズを終わりにできます。",
     },
 
     rule : {
         title : "ルール設定",
         first_victim_count : {
             txt: "初日の犠牲者数　",
+        },
+        first_victim : {
+            txt : "欠け",
+            no  : "無😌",
+            yes : "有😨",
         },
         first_sight : {
             txt          : "初夜の占い先　　",
@@ -299,6 +304,7 @@
         phase_name        : "{n}日目 昼間",
         no_killed_morning : "昨晩亡くなった方はいませんでした．",
         killed_morning    : "{user} さんが無残な姿で発見されました．",
+        anonymous_name    : "無名の誰か",
 
         day_number        : "{n} 日目",
         living_and_num    : "生存者({n}人)",
@@ -325,7 +331,7 @@
         cut_time_title        : "時間短縮の希望を行うには :o: リアクションをしてください．成立必要人数 : {req}人",
         cut_time_accept       : "時間短縮の希望を行いました．{now}/{req}人",
         cut_time_cancel       : "時間短縮の希望をキャンセルしました．{now}/{req}人",
-        cut_time_approved     : "時間短縮が成立しました",
+        cut_time_approved     : "時間短縮が成立しました. 残り{cut_time}秒で現在のフェーズが終了します.",
     },
     p5 : {
         phase_name        : "{n}日目 投票",

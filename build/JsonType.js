@@ -181,6 +181,11 @@ exports.LangTypeFormat = (0, ts_json_validator_1.obj)({
         first_victim_count: (0, ts_json_validator_1.obj)({
             txt: ts_json_validator_1.str,
         }),
+        first_victim: (0, ts_json_validator_1.obj)({
+            txt: ts_json_validator_1.str,
+            no: ts_json_validator_1.str,
+            yes: ts_json_validator_1.str,
+        }),
         first_sight: (0, ts_json_validator_1.obj)({
             txt: ts_json_validator_1.str,
             no_sight: ts_json_validator_1.str,
@@ -317,6 +322,7 @@ exports.LangTypeFormat = (0, ts_json_validator_1.obj)({
         phase_name: ts_json_validator_1.str,
         no_killed_morning: ts_json_validator_1.str,
         killed_morning: ts_json_validator_1.str,
+        anonymous_name: ts_json_validator_1.str,
         day_number: ts_json_validator_1.str,
         living_and_num: ts_json_validator_1.str,
         length_of_the_day: ts_json_validator_1.str,

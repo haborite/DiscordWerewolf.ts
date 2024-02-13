@@ -219,6 +219,11 @@ export const LangTypeFormat = obj({
         first_victim_count: obj({
             txt           : str,
         }),
+        first_victim : obj({
+            txt : str,
+            no  : str,
+            yes : str,
+        }),
         first_sight : obj({
             txt           : str,
             no_sight    : str,
@@ -385,6 +390,7 @@ export const LangTypeFormat = obj({
         phase_name           : str,
         no_killed_morning    : str,
         killed_morning       : str,
+        anonymous_name       : str,
         day_number           : str,
         living_and_num       : str,
         length_of_the_day    : str,
