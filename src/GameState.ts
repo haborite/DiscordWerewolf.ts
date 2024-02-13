@@ -690,9 +690,7 @@ export default class GameState {
         this.channels.GameLog.permissionOverwrites.set(permReadOnly); // or permReadOnly
 
         let permLiving      : Discord.OverwriteResolvable[] = [];
-        let permLivingVoice : Discord.OverwriteResolvable[] = [];
         let permDead        : Discord.OverwriteResolvable[] = [];
-        let permDeadVoice   : Discord.OverwriteResolvable[] = [];
         let permWerewolf    : Discord.OverwriteResolvable[] = [];
         let permMason       : Discord.OverwriteResolvable[] = [];
 
@@ -701,9 +699,7 @@ export default class GameState {
             case Phase.p1_Wanted:
                 // for @everyone
                 addPerm(this.guild.id, Perm.RW      , permLiving     );
-                addPerm(this.guild.id, Perm.RW      , permLivingVoice);
                 addPerm(this.guild.id, Perm.ReadOnly, permDead       );
-                addPerm(this.guild.id, Perm.RW,       permDeadVoice  );
                 addPerm(this.guild.id, Perm.ViewOnly, permWerewolf   );
                 addPerm(this.guild.id, Perm.ViewOnly, permMason      );
                 break;
@@ -712,14 +708,10 @@ export default class GameState {
                 addPerm(this.guild.id, Perm.NoAccess, permMason      );
                 addPerm(this.guild.id, Perm.NoAccess, permWerewolf   );
                 addPerm(this.guild.id, Perm.ReadOnly, permLiving     );
-                addPerm(this.guild.id, Perm.ReadOnly, permLivingVoice);
                 addPerm(this.guild.id, Perm.NoAccess, permDead       );
-                addPerm(this.guild.id, Perm.ViewOnly, permDeadVoice  );
                 for (const uid in this.members) {
                     addPerm(uid, Perm.RW,       permLiving);
-                    addPerm(uid, Perm.ReadOnly, permLivingVoice);
                     addPerm(uid, Perm.NoAccess, permDead       );
-                    addPerm(uid, Perm.ViewOnly, permDeadVoice  );
                     if (this.members[uid].allowWolfRoom) {
                         addPerm(uid, Perm.ReadOnly, permWerewolf);
                     } else {
@@ -737,14 +729,10 @@ export default class GameState {
                 addPerm(this.guild.id, Perm.NoAccess, permMason      );
                 addPerm(this.guild.id, Perm.NoAccess, permWerewolf   );
                 addPerm(this.guild.id, Perm.ReadOnly, permLiving     );
-                addPerm(this.guild.id, Perm.ReadOnly, permLivingVoice);
                 addPerm(this.guild.id, Perm.NoAccess, permDead       );
-                addPerm(this.guild.id, Perm.ViewOnly, permDeadVoice  );
                 for(const uid in this.members) {
                     addPerm(uid, Perm.ReadOnly, permLiving);
-                    addPerm(uid, Perm.ReadOnly, permLivingVoice);
                     addPerm(uid, Perm.NoAccess, permDead       );
-                    addPerm(uid, Perm.ViewOnly, permDeadVoice  );
                     if (this.members[uid].allowWolfRoom) {
                         addPerm(uid, Perm.RW,       permWerewolf);
                     } else {
@@ -762,20 +750,14 @@ export default class GameState {
                 addPerm(this.guild.id, Perm.NoAccess, permMason      );
                 addPerm(this.guild.id, Perm.NoAccess, permWerewolf   );
                 addPerm(this.guild.id, Perm.ReadOnly, permLiving     );
-                addPerm(this.guild.id, Perm.ReadOnly, permLivingVoice);
                 addPerm(this.guild.id, Perm.NoAccess, permDead       );
-                addPerm(this.guild.id, Perm.ViewOnly, permDeadVoice  );
                 for(const uid in this.members) {
                     if(this.members[uid].isLiving) {
                         addPerm(uid, Perm.RW,       permLiving);
-                        addPerm(uid, Perm.RW,       permLivingVoice);
                         addPerm(uid, Perm.NoAccess, permDead       );
-                        addPerm(uid, Perm.ViewOnly, permDeadVoice  );
                     } else {
                         addPerm(uid, Perm.ReadOnly, permLiving);
-                        addPerm(uid, Perm.ReadOnly, permLivingVoice);
                         addPerm(uid, Perm.RW,       permDead       );
-                        addPerm(uid, Perm.RW,       permDeadVoice  );
                     }
                     if (this.members[uid].allowWolfRoom) {
                         const enableDaytimeWolfRoom = true;
@@ -804,25 +786,18 @@ export default class GameState {
                 addPerm(this.guild.id, Perm.NoAccess, permMason      );
                 addPerm(this.guild.id, Perm.NoAccess, permWerewolf   );
                 addPerm(this.guild.id, Perm.ReadOnly, permLiving     );
-                addPerm(this.guild.id, Perm.ReadOnly, permLivingVoice);
                 addPerm(this.guild.id, Perm.NoAccess, permDead       );
-                addPerm(this.guild.id, Perm.ViewOnly, permDeadVoice  );
                 for(const uid in this.members) {
                     if(this.members[uid].isLiving) {
                         if(this.ruleSetting.vote.talk){
                             addPerm(uid, Perm.RW,       permLiving);
-                            addPerm(uid, Perm.RW,       permLivingVoice);
                         }else{
                             addPerm(uid, Perm.ReadOnly, permLiving);
-                            addPerm(uid, Perm.ReadOnly, permLivingVoice);
                         }
                         addPerm(uid, Perm.NoAccess, permDead       );
-                        addPerm(uid, Perm.ViewOnly, permDeadVoice  );
                     } else {
                         addPerm(uid, Perm.ReadOnly, permLiving);
-                        addPerm(uid, Perm.ReadOnly, permLivingVoice);
                         addPerm(uid, Perm.RW,       permDead       );
-                        addPerm(uid, Perm.RW,       permDeadVoice  );
                     }
                     if (this.members[uid].allowWolfRoom) {
                         if(this.members[uid].isLiving) {
@@ -849,20 +824,14 @@ export default class GameState {
                 addPerm(this.guild.id, Perm.NoAccess, permMason      );
                 addPerm(this.guild.id, Perm.NoAccess, permWerewolf   );
                 addPerm(this.guild.id, Perm.ReadOnly, permLiving     );
-                addPerm(this.guild.id, Perm.ReadOnly, permLivingVoice);
                 addPerm(this.guild.id, Perm.NoAccess, permDead       );
-                addPerm(this.guild.id, Perm.ViewOnly, permDeadVoice  );
                 for(const uid in this.members) {
                     if(this.members[uid].isLiving) {
                         addPerm(uid, Perm.ReadOnly, permLiving);
-                        addPerm(uid, Perm.ReadOnly, permLivingVoice);
                         addPerm(uid, Perm.NoAccess, permDead       );
-                        addPerm(uid, Perm.ViewOnly, permDeadVoice  );
                     } else {
                         addPerm(uid, Perm.ReadOnly, permLiving);
-                        addPerm(uid, Perm.ReadOnly, permLivingVoice);
                         addPerm(uid, Perm.RW,       permDead       );
-                        addPerm(uid, Perm.RW,       permDeadVoice  );
                     }
                     if (this.members[uid].allowWolfRoom){
                         if(this.members[uid].isLiving) {
@@ -889,44 +858,39 @@ export default class GameState {
                 addPerm(this.guild.id, Perm.RW, permMason      );
                 addPerm(this.guild.id, Perm.RW, permWerewolf   );
                 addPerm(this.guild.id, Perm.RW, permLiving     );
-                addPerm(this.guild.id, Perm.RW, permLivingVoice);
                 addPerm(this.guild.id, Perm.RW, permDead       );
-                addPerm(this.guild.id, Perm.RW, permDeadVoice  );
                 break;
             default:
                 assertUnreachable(this.phase);
         }
         if (this.guild.members.me != null) {
             addPerm(this.guild.members.me.id, Perm.Admin, permLiving     );
-            addPerm(this.guild.members.me.id, Perm.Admin, permLivingVoice);
             addPerm(this.guild.members.me.id, Perm.Admin, permDead       );
-            addPerm(this.guild.members.me.id, Perm.Admin, permDeadVoice  );
             addPerm(this.guild.members.me.id, Perm.Admin, permWerewolf   );
             addPerm(this.guild.members.me.id, Perm.Admin, permMason      );
         }
         this.channels.Living.permissionOverwrites.set(permLiving);
-        this.channels.LivingVoice.permissionOverwrites.set(permLivingVoice);
         this.channels.Dead.permissionOverwrites.set(permDead);
-        this.channels.DeadVoice.permissionOverwrites.set(permDeadVoice);
         this.channels.Werewolf.permissionOverwrites.set(permWerewolf);
         this.channels.Mason.permissionOverwrites.set(permMason);
 
-        const LiveID = this.channels.LivingVoice.id;
-        const DeadID = this.channels.DeadVoice.id;
+        // const LiveID = this.channels.LivingVoice.id;
+        // const DeadID = this.channels.DeadVoice.id;
         for(const uid in this.members) {
             const m_old = this.members[uid].member;
             if(m_old == null) continue;
             m_old.fetch().then(m => {
-                if(m.voice.channel == null) {
-                    m.voice;
-                    return;
-                }
-                let Li = permLivingVoice.findIndex(a => a.id == uid);
-                let Di = permDeadVoice.findIndex(a => a.id == uid);
-                if(Li < 0) Li = permLivingVoice.findIndex(a => a.id == this.guild.id);
-                if(Di < 0) Di = permDeadVoice.findIndex(a => a.id == this.guild.id);
-                if(Li < 0) this.err();
-                if(Di < 0) this.err();
+                // if(m.voice.channel == null) {
+                //     m.voice;
+                //     return;
+                // }
+                // let Li = permLivingVoice.findIndex(a => a.id == uid);
+                // let Di = permDeadVoice.findIndex(a => a.id == uid);
+                // if(Li < 0) Li = permLivingVoice.findIndex(a => a.id == this.guild.id);
+                // if(Di < 0) Di = permDeadVoice.findIndex(a => a.id == this.guild.id);
+                // if(Li < 0) this.err();
+                // if(Di < 0) this.err();
+                /*
                 if(m.voice.channel.id == LiveID){
                     const allowL = permLivingVoice[Li].allow;
                     if(allowL == RW_alw){
@@ -958,8 +922,10 @@ export default class GameState {
                 } else {
                     m.voice.setMute(false);
                 }
+                */
             });
         }
+        /*
         this.channels.LivingVoice.fetch().then(v => {
             v.members.forEach(m => {
                 if(m.id in this.members) return;
@@ -974,6 +940,8 @@ export default class GameState {
                 }
             })
         })
+        */
+       /*
         this.channels.DeadVoice.fetch().then(v => {
             v.members.forEach(m => {
                 if(m.id in this.members) return;
@@ -990,6 +958,7 @@ export default class GameState {
                 }
             })
         })
+        */
     }    
     
     // Clear all joined members
@@ -2507,7 +2476,7 @@ export default class GameState {
         let dlist : [string, string][] = [];
         for(const uid in this.members){
             if(!this.members[uid].isLiving){
-                dlist.push([uid, this.channels.LivingVoice.id]);
+                // dlist.push([uid, this.channels.LivingVoice.id]);
             }
         }
         this.updateRoomsRW();

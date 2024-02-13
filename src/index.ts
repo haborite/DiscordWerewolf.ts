@@ -35,7 +35,6 @@ const clients = [
         Discord.GatewayIntentBits.GuildMessages,
         Discord.GatewayIntentBits.MessageContent,
         Discord.GatewayIntentBits.GuildMessageReactions,
-        Discord.GatewayIntentBits.GuildVoiceStates,
         Discord.GatewayIntentBits.Guilds
     ] }), 
 ];
@@ -156,30 +155,19 @@ function loadAndSetServerSetting(default_path : string, server_setting_files : a
     return res;
 }
 
-function has_room_all_game_channel_support_t(
+function has_room_all_game_channel_support_t (
     catId : string, 
     find_name : string, 
-    channels : Discord.GuildChannelManager) : Discord.TextChannel | null{
+    channels : Discord.GuildChannelManager) : Discord.TextChannel | null 
+{
     var ret : Discord.TextChannel | null  = null;
     const targetChannel = channels.cache.find(c => (c.parentId == catId && c.name == find_name));
     if(targetChannel == null) return null;
     if (!((targetChannel): targetChannel is Discord.TextChannel => targetChannel.type === Discord.ChannelType.GuildText)(targetChannel)) return null;
     return targetChannel;
 }
-function has_room_all_game_channel_support_v(
-    catId : string, 
-    find_name : string, 
-    channels : Discord.GuildChannelManager) : Discord.VoiceChannel | null{
-    var ret : Discord.VoiceChannel | null  = null;
-    const targetChannel = channels.cache.find(c => (c.parentId == catId && c.name == find_name));
-    if(targetChannel == null) return null;
-    if (!((targetChannel): targetChannel is Discord.VoiceChannel => targetChannel.type === Discord.ChannelType.GuildVoice)(targetChannel)) return null;
-    return targetChannel;
-}
 
 function has_room_all_game_channel(catId : string, channels : Discord.GuildChannelManager, SrvLangTxt : LangType) : GameChannels | null{
-    const aLivingVoice = has_room_all_game_channel_support_v(catId, SrvLangTxt['game']["room_LivingVoice"], channels); if(aLivingVoice == null) return null;
-    const aDeadVoice   = has_room_all_game_channel_support_v(catId, SrvLangTxt['game']["room_DeadVoice"]  , channels); if(aDeadVoice   == null) return null;
     const aWerewolf    = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_Werewolf"]   , channels); if(aWerewolf    == null) return null;
     const aMason       = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_Mason"]      , channels); if(aMason       == null) return null;
     const aGameLog     = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_GameLog"]    , channels); if(aGameLog     == null) return null;
@@ -192,9 +180,7 @@ function has_room_all_game_channel(catId : string, channels : Discord.GuildChann
         aGameLog,
         aDebugLog,
         aLiving,
-        aLivingVoice,
         aDead,
-        aDeadVoice
     );
 }
 
@@ -211,9 +197,7 @@ async function make_room(message: Discord.Message, category_name: string, SrvLan
     let GameLog     : Discord.TextChannel  | null = null;
     let DebugLog    : Discord.TextChannel  | null = null;
     let Living      : Discord.TextChannel  | null = null;
-    let LivingVoice : Discord.VoiceChannel | null = null;
     let Dead        : Discord.TextChannel  | null = null;
-    let DeadVoice   : Discord.VoiceChannel | null = null;
 
     const cat = await guild.channels.create({name: category_name, type : Discord.ChannelType.GuildCategory});
     Mason       = await guild.channels.create({name: SrvLangTxt.game.room_Mason, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 1});
@@ -221,18 +205,14 @@ async function make_room(message: Discord.Message, category_name: string, SrvLan
     GameLog     = await guild.channels.create({name: SrvLangTxt.game.room_GameLog, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 3});
     DebugLog    = await guild.channels.create({name: SrvLangTxt.game.room_DebugLog, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 4});
     Living      = await guild.channels.create({name: SrvLangTxt.game.room_Living, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 5});
-    LivingVoice = await guild.channels.create({name: SrvLangTxt.game.room_LivingVoice, type : Discord.ChannelType.GuildVoice, parent: cat.id, position : 6});
     Dead        = await guild.channels.create({name: SrvLangTxt.game.room_Dead, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 7});
-    DeadVoice   = await guild.channels.create({name: SrvLangTxt.game.room_DeadVoice, type : Discord.ChannelType.GuildVoice, parent: cat.id, position : 8});
     return new GameChannels(
         Mason,
         Werewolf,
         GameLog,
         DebugLog,
         Living,
-        LivingVoice,
         Dead,
-        DeadVoice
     );
 }
 

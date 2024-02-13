@@ -13,9 +13,7 @@ export class GameChannels {
     GameLog     : Discord.TextChannel;
     DebugLog    : Discord.TextChannel;
     Living      : Discord.TextChannel;
-    LivingVoice : Discord.VoiceChannel;
     Dead        : Discord.TextChannel;
-    DeadVoice   : Discord.VoiceChannel;
 
     constructor(
         aMason       : Discord.TextChannel,
@@ -23,18 +21,14 @@ export class GameChannels {
         aGameLog     : Discord.TextChannel,
         aDebugLog    : Discord.TextChannel,
         aLiving      : Discord.TextChannel,
-        aLivingVoice : Discord.VoiceChannel,
         aDead        : Discord.TextChannel,
-        aDeadVoice   : Discord.VoiceChannel
     ) {
         this.Mason        = aMason;
         this.Werewolf     = aWerewolf;
         this.GameLog      = aGameLog;
         this.DebugLog     = aDebugLog;
         this.Living       = aLiving;
-        this.LivingVoice  = aLivingVoice;
         this.Dead         = aDead;
-        this.DeadVoice    = aDeadVoice;
     }
 
     clear_category(client: Discord.Client, parentID: string) {
