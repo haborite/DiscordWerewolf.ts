@@ -5,7 +5,6 @@ import {isValid, JsonRuntimeType, validate} from 'ts-json-validator';
 import {LangTypeFormat, LangType, RuleType, ServerSettingsFormat} from "./JsonType";
 import GameState from "./GameState"
 import {GameChannels, isThisCommand, loadAndSetSysRuleSet} from "./GameUtils"
-// import {HttpServer} from "./HttpServer"
 const JSON5 = require('json5');
 const util = require('util');
 

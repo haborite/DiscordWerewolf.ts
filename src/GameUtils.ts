@@ -3,6 +3,8 @@ import * as fs from "fs"
 import {validate, JsonRuntimeType} from 'ts-json-validator';
 import {RuleTypeFormat, RuleType} from "./JsonType";
 var JSON5 = require('json5');
+import * as path from 'path';
+
 
 export class GameChannels {
     
@@ -75,6 +77,29 @@ export function shuffle<T>(array: T[]) {
     return out;
 }
 
+export async function loadAttachedJson5(
+    attachments: Discord.Collection<string, Discord.Attachment>
+) {
+    const attachmentURL = attachments.first()?.url;
+    if (attachmentURL) {
+        if (path.extname(attachmentURL).replace(/\?.*/, '') === '.json5') {
+            try {
+                const res = await fetch(attachmentURL);
+                if (!res.ok) {
+                    console.log(`HTTP error! Status: ${res.status}`);
+                    return 
+                }
+                const txt = await res.text();
+                const json5_content = JSON5.parse(txt);
+                const ret = validate(RuleTypeFormat, json5_content);
+                return ret         
+            } catch (error) {
+                console.error('Error parsing JSON5 file:', error);
+                return
+            }
+        }
+    }
+}
 
 export function loadAndSetSysRuleSet(path : string, RuleSet ?: RuleType){
     const data = fs.readFileSync(path, 'utf-8');

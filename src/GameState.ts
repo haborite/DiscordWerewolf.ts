@@ -2,10 +2,9 @@ import * as Discord from "discord.js";
 import {GameChannels, format, isThisCommand, assertUnreachable, shuffle, loadAndSetSysRuleSet, updateHashValueWithFormat} from "./GameUtils"
 import * as Util from "./GameUtils"
 import {LangType, RuleType, RolesStr, SeerPriestType, ServerSettingsType, RuleTypeFormat} from "./JsonType";
-import * as path from 'path';
-// import fetch from 'node-fetch';
-var JSON5 = require('json5');
-import {validate} from 'ts-json-validator';
+// import * as path from 'path';
+// var JSON5 = require('json5');
+// import {validate} from 'ts-json-validator';
 
 export const Phase = {
     p0_UnStarted   : '0.UnStarted',
@@ -207,8 +206,6 @@ const ReadOnly_dny = [
     Discord.PermissionsBitField.Flags.CreatePrivateThreads,
     Discord.PermissionsBitField.Flags.SendMessagesInThreads, 
 ];
-    // Discord.PermissionsBitField.Flags.UsePulicThreads,
-    // Discord.PermissionsBitField.Flags.UsePrivateThreads,
 
 const ViewOnly_alw = [
     Discord.PermissionsBitField.Flags.ViewChannel
@@ -225,12 +222,7 @@ const ViewOnly_dny = [
     Discord.PermissionsBitField.Flags.SendMessagesInThreads,
 ];
 
-// : Discord.Permissions= new Discord.Permissions(
-//     ['CONNECT', 'ADD_REACTIONS', 'SEND_MESSAGES', 'SPEAK', 'MANAGE_THREADS', 
-//     'USE_PUBLIC_THREADS', 'CREATE_PUBLIC_THREADS', 'USE_PRIVATE_THREADS', 'CREATE_PRIVATE_THREADS', 'SEND_MESSAGES_IN_THREADS']);
-    
 const NoAccess_alw: bigint[] = [];
-// : Discord.Permissions= new Discord.Permissions([]);
 
 const NoAccess_dny = [
     Discord.PermissionsBitField.Flags.ViewChannel,
@@ -243,12 +235,6 @@ const NoAccess_dny = [
     Discord.PermissionsBitField.Flags.CreatePrivateThreads,
     Discord.PermissionsBitField.Flags.SendMessagesInThreads,    
 ];
-
-// : Discord.Permissions= new Discord.Permissions(
-//    ['VIEW_CHANNEL', 'CONNECT',
-//    'ADD_REACTIONS', 'SEND_MESSAGES', 
-//    'SPEAK', 'MANAGE_THREADS', 'USE_PUBLIC_THREADS', 'CREATE_PUBLIC_THREADS', 'USE_PRIVATE_THREADS', 'CREATE_PRIVATE_THREADS', 'SEND_MESSAGES_IN_THREADS']);
-
 
 const enum Perm {NoAccess, ReadOnly, ViewOnly, RW, Admin}
 function addPerm(id : string, p : Perm, perms : Discord.OverwriteResolvable[]){
@@ -1871,7 +1857,7 @@ export default class GameState {
         this.updateRoomsRW();
         let living     : string = "";
         let living_num : number = 0;
-        for(const uid in this.members){
+        for (const uid in this.members) {
             this.members[uid].validVoteID = [];
             if(this.members[uid].isLiving){
                 living += this.members[uid].nickname + "\n";
@@ -1912,15 +1898,7 @@ export default class GameState {
                     return this.members[uid].nickname
                 }
             });
-            /*
-            const thumbs = uids.map((uid) => {
-                if (uid === "0") {
-                    return "https://icons8.com/icon/37170/man"
-                } else {
-                    return this.members[uid].user.displayAvatarURL()
-                }
-            });
-            */
+
             const title_txt: string = unames.reduce(
                 (acc: string, val: string) => acc + format(this.langTxt.p4.killed_morning, {user : val}) + "\n",
                 "",
@@ -1966,8 +1944,29 @@ export default class GameState {
         this.voteNum     = 0;
         this.runoffNum   = 0;
         this.stopTimerRequest = false;
+
+        for (let my_id in this.members) {
+            if (!this.members[my_id].isLiving) continue;
+            const uch = this.members[my_id].uchannel;
+            if (uch == null) return this.err();
+            const component = new Discord.ActionRowBuilder<Discord.ButtonBuilder>().addComponents(
+                Util.make_button(
+                    "cut_time", 
+                    this.langTxt.p4.cut_time_label, 
+                    {style : "red"}
+                )
+            );
+            const sent_message = await uch.send(
+                {
+                    content: this.langTxt.sys.cuttime_desc,
+                    components: [component]
+                }
+            );
+            this.interactControllers[InteractType.CutTime][sent_message.id] = sent_message;
+        }
         
         gameTimer(this.gameId, this, Phase.p4_Daytime, this.ruleSetting.day.alert_times, dummy_startP5Vote);
+
     }
 
     async makeDictatorController(){
@@ -2328,11 +2327,6 @@ export default class GameState {
             } else {
                 uch.send(nightComingEmbed);
             }
-            {
-                const component = new Discord.ActionRowBuilder<Discord.ButtonBuilder>().addComponents(Util.make_button("cut_time", this.langTxt.p4.cut_time_label, {style : "red"}));
-                const sent_message = await uch.send({content: this.langTxt.sys.cuttime_desc, components: [component]});
-                this.interactControllers[InteractType.CutTime][sent_message.id] = sent_message;
-            }
         }
         { // for Werewolf
             this.interactControllers[InteractType.Werewolf] = Object.create(null);
@@ -2448,8 +2442,9 @@ export default class GameState {
         if (interaction.customId != "cut_time") return;
         const isAdd = true; // TODO
         const liveNum =  Object.keys(this.members).reduce((acc, value) => { return acc + (this.members[value].isLiving?1:0);}, 0);
-        const req = liveNum;
-        if(!isAdd){
+        const reqRule = this.ruleSetting.day.cut_time;
+        const req = (reqRule == "majority") ? (liveNum + 1) / 2 | 0 : liveNum;
+        if (!isAdd) {
             delete this.cutTimeMember[uid];
             const now = Object.keys(this.cutTimeMember).length;
             const txt = format(this.langTxt.p4.cut_time_cancel, {now : now, req : req});
@@ -2461,7 +2456,7 @@ export default class GameState {
             const txt = format(this.langTxt.p4.cut_time_accept, {now : now, req : req});
             interaction.reply(txt);
             this.channels.Living.send(txt);
-            if(now >= req) {
+            if (now >= req) {
                 this.channels.Living.send(this.langTxt.p4.cut_time_approved);
                 this.remTime = Math.min(12, this.remTime);
             }
@@ -2755,7 +2750,7 @@ export default class GameState {
                 }
             }
             if(i == InteractType.CutTime){
-                if(this.phase == Phase.p6_Night) {
+                if(this.phase == Phase.p4_Daytime) {
                     if(interaction.channelId != uch.id) return;
                     await this.cutTimeCheck(interaction);
                 }
@@ -2777,148 +2772,146 @@ export default class GameState {
 
         const isDeveloper = (message.author.id in this.developer);
         const isGM        = isDeveloper || (message.author.id in this.GM);
-        
-        // Load JSON setting file
-        if (message.attachments.size > 0) {
-            if (this.phase == Phase.p0_UnStarted || this.phase == Phase.p1_Wanted ) {
-                const attachmentURL = message.attachments.first()?.url;
-                if (attachmentURL) {
-                    if (path.extname(attachmentURL).replace(/\?.*/, '') === '.json5') {
-                        try {
-                            const res = await fetch(attachmentURL);
-                            if (!res.ok) {
-                                console.log(`HTTP error! Status: ${res.status}`);
-                                this.err();
-                            }
-                            const txt = await res.text();
-                            const json5_content = JSON5.parse(txt);
-                            console.log("5");
-                            const ret = validate(RuleTypeFormat, json5_content);
-                            console.log("6");
-                            if (ret != null) {
-                                console.log("7");
-                                this.ruleSetting = ret;
-                                this.setRoles2(ret);
-                                this.interactControllers[InteractType.Accept] = {};
-                                this.start_1Wanted();
-                            }
-                            console.log("8");              
-                        } catch (error) {
-                            console.error('Error parsing JSON5 file:', error);
-                            this.err();
-                        }
-                    }
-                }
-                return;
-            }
-        }
 
+        // Sys: Cotinue command
         if (isThisCommand(message.content, this.langTxt.p7.cmd_continue) >= 0) {
             await this.nextGame();
-            return;
+            return
         }
 
+        // Sys: Reload command
         if (isThisCommand(message.content, this.langTxt.sys.cmd_reload_rule) >= 0) {
-            if(isGM){ this.reloadDefaultRule();
-            } else if(message.channel.type == Discord.ChannelType.GuildText) {  this.needGmPerm(message.channel);
+            if (isGM) {
+                this.reloadDefaultRule();
+            } else if (message.channel.type == Discord.ChannelType.GuildText) {
+                this.needGmPerm(message.channel);
             }
-            return;
+            return
         }
 
-        if (isThisCommand(message.content, this.langTxt.sys.cmd_link_voice) >= 0) {
-            if (isGM) {
-                // await this.voiceChannelsLink();
-            } else if(message.channel.type == Discord.ChannelType.GuildText) {
-                this.needGmPerm(message.channel);
-            }
-            return;
-        }
-        if (isThisCommand(message.content, this.langTxt.sys.cmd_unlink_voice) >= 0) {
-            if (isGM) {
-                // await this.voiceChannelsLink();
-            } else if(message.channel.type == Discord.ChannelType.GuildText) {
-                this.needGmPerm(message.channel);
-            }
-            // this.voiceChannelsUnlink();
-            return;
-        }
+        // Sys: Stop timer command
         if (isThisCommand(message.content, this.langTxt.sys.cmd_stop_timer) >= 0) {
             const ch = message.channel;
             if(ch.type == Discord.ChannelType.GuildText) {
-                if(isGM){ this.stopTimer(ch);
-                }else{ this.needGmPerm(ch) }
+                if (isGM) {
+                    this.stopTimer(ch);
+                } else {
+                    this.needGmPerm(ch);
+                }
             }
-            return;
+            return
         }
+
+        // Sys: Restart timer command
         if (isThisCommand(message.content, this.langTxt.sys.cmd_resume_timer) >= 0) {
             const ch = message.channel;
-            if(ch.type == Discord.ChannelType.GuildText) {
-                if(isGM){ this.resumeTimer(ch);
-                }else{ this.needGmPerm(ch) }
+            if (ch.type == Discord.ChannelType.GuildText) {
+                if (isGM) {
+                    this.resumeTimer(ch);
+                } else {
+                    this.needGmPerm(ch); 
+                }
             }
         }
-        
+
+        // Sys: Member list command
         if (isThisCommand(message.content, this.langTxt.sys.cmd_member_list) >= 0) {
             const ch = message.channel;
             if(ch.type == Discord.ChannelType.GuildText) {
                 this.sendMemberList(ch);
             }
-            return;
-        }
-        if (isThisCommand(message.content, this.langTxt.sys.cmd_update_perm) >= 0) {
-            this.updateRoomsRW()
-            return;
+            return
         }
 
-        console.log("this.phase=");
-        console.log(this.phase);
+        // Sys: Update perameter command
+        if (isThisCommand(message.content, this.langTxt.sys.cmd_update_perm) >= 0) {
+            this.updateRoomsRW()
+            return
+        }
+
+        // Phase 0 or 1: Load JSON setting file
+        if ((this.phase == Phase.p0_UnStarted) || (this.phase == Phase.p1_Wanted)) {
+            const attachments = message.attachments;
+            if (attachments.size > 0) {
+                if (this.phase == Phase.p0_UnStarted || this.phase == Phase.p1_Wanted ) {
+                    const ret = await Util.loadAttachedJson5(attachments);
+                    if (ret != null) {
+                        this.ruleSetting = ret;
+                        this.setRoles2(ret);
+                        this.interactControllers[InteractType.Accept] = {};
+                        this.start_1Wanted();
+                        console.log(ret);
+                    }
+                }
+            }
+        }
+
+        // Phase0: Unstarted commands
         if (this.phase == Phase.p0_UnStarted ) {
+            
+            // Start game
             if (isThisCommand(message.content, this.langTxt.p0.cmd_start) >= 0) {
                 this.start_1Wanted();
                 return
             }
+            
+            // Delete room
             if (isThisCommand(message.content, this.langTxt.p0.cmd_delete_room) >= 0) {
+                // TODO: clear前に各chのvisibility変更
                 this.channels.clear_category(this.clients[0], this.parentID);
                 return
             }
             return
         }
 
+        // Phase1: Recruitment commands
         if (this.phase == Phase.p1_Wanted) {
+
+            // Change rule
             let idx = 0;
             idx = isThisCommand(message.content, this.langTxt.sys.cmd_change_rule);
             if (idx >= 0) {
-                if (isGM) { 
+                if (message.channel.type == Discord.ChannelType.GuildText) {
                     this.changeRule(message.content.substring(this.langTxt.sys.cmd_change_rule[idx].length));
-                } else if (message.channel.type == Discord.ChannelType.GuildText) {
-                    this.needGmPerm(message.channel);
                 }
-                return;
             }
-            if(isThisCommand(message.content, this.langTxt.p1.cmd_join_force) >= 0){
+            
+            // Force join
+            if (isThisCommand(message.content, this.langTxt.p1.cmd_join_force) >= 0) {
                 this.addEntrant(message, true);
-                return;
+                return
             }
-            if(isThisCommand(message.content, this.langTxt.p1.cmd_join) >= 0){
+
+            // Join
+            if (isThisCommand(message.content, this.langTxt.p1.cmd_join) >= 0) {
                 this.addEntrant(message);
-                return;
+                return
             }
-            if(isThisCommand(message.content, this.langTxt.p1.cmd_leave) >= 0){
+
+            // Leave
+            if (isThisCommand(message.content, this.langTxt.p1.cmd_leave) >= 0) {
                 this.acceptDecline(message);
-                return;
+                return
             }
-            if(isThisCommand(message.content, this.langTxt.p1.cmd_kick) >= 0){
+
+            // Kick
+            if (isThisCommand(message.content, this.langTxt.p1.cmd_kick) >= 0) {
                 this.removeEntrant(message);
-                return;
+                return
             }
-            if(isThisCommand(message.content, this.langTxt.p1.cmd_start) >= 0){
+
+            // Start
+            if (isThisCommand(message.content, this.langTxt.p1.cmd_start) >= 0) {
                 await this.tryPreparingGame(message);
-                return;
+                return
             }
-            return;
+            return
         }
 
+        // Phase 2: preparation commands
         if (this.phase == Phase.p2_Preparation) {
+
+            // 
             if (Object.keys(this.members).find(k => k == message.author.id) != null) {
                 const uch = this.members[message.author.id].uchannel;
                 if(uch != null && message.channel.id == uch.id){
@@ -2931,13 +2924,13 @@ export default class GameState {
                     return;
                 }
             }
-            return;
+            return
         }
 
         if (this.phase == Phase.p7_GameEnd) {
             if (isThisCommand(message.content, this.langTxt.p7.cmd_breakup) >= 0) {
                 this.gameEndFinish();
-                return;
+                return
             }
         }
 
@@ -3019,7 +3012,7 @@ function gameTimer(
 ////////////////////////////////////////////
 
 
-async function dummy_gamePreparation2(gid : number, obj : GameState){
+async function dummy_gamePreparation2(gid : number, obj : GameState) {
     console.log("function dummy_gamePreparation2");
     if (gid != obj.gameId) {
         console.log("something wrong.");
@@ -3031,23 +3024,23 @@ async function dummy_gamePreparation2(gid : number, obj : GameState){
     };
 }
 
-async function dummy_startP4Daytime(gid : number, obj : GameState){
+async function dummy_startP4Daytime(gid : number, obj : GameState) {
     if(gid != obj.gameId) return;
     await obj.startP4_Daytime();
 }
 
-async function dummy_startP5Vote(gid : number, obj : GameState){
+async function dummy_startP5Vote(gid : number, obj : GameState) {
     if(gid != obj.gameId) return;
     await obj.startP5_Vote();
 }
-async function dummy_voteTimeup(gid : number, obj : GameState){
+async function dummy_voteTimeup(gid : number, obj : GameState) {
     if(gid != obj.gameId) return;
     obj.voteTimeup();
 }
-async function dummy_nightFinish(gid : number, obj : GameState){
+async function dummy_nightFinish(gid : number, obj : GameState) {
     await obj.nightFinish();
 }
 
-async function dummy_gameEndFinish(gid : number, obj : GameState){
+async function dummy_gameEndFinish(gid : number, obj : GameState) {
     obj.gameEndFinish();
 }
