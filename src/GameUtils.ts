@@ -14,6 +14,7 @@ export class GameChannels {
     DebugLog    : Discord.TextChannel;
     Living      : Discord.TextChannel;
     Dead        : Discord.TextChannel;
+    Audience    : Discord.TextChannel;
 
     constructor(
         aMason       : Discord.TextChannel,
@@ -22,6 +23,7 @@ export class GameChannels {
         aDebugLog    : Discord.TextChannel,
         aLiving      : Discord.TextChannel,
         aDead        : Discord.TextChannel,
+        aAudience    : Discord.TextChannel,
     ) {
         this.Mason        = aMason;
         this.Werewolf     = aWerewolf;
@@ -29,6 +31,7 @@ export class GameChannels {
         this.DebugLog     = aDebugLog;
         this.Living       = aLiving;
         this.Dead         = aDead;
+        this.Audience     = aAudience;
     }
 
     clear_category(client: Discord.Client, parentID: string) {
@@ -76,7 +79,8 @@ export async function loadAttachedJson5(
 ) {
     const attachmentURL = attachments.first()?.url;
     if (attachmentURL) {
-        if (path.extname(attachmentURL).replace(/\?.*/, '') === '.json5') {
+        const extname = path.extname(attachmentURL).replace(/\?.*/, '');
+        if (extname === '.json5' || extname === '.txt') {
             try {
                 const res = await fetch(attachmentURL);
                 if (!res.ok) {

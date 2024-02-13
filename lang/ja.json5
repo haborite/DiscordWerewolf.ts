@@ -6,6 +6,7 @@
         room_DebugLog    : "デバッグログ",
         room_Living      : "生存者チャット",
         room_Dead        : "霊界チャット",
+        room_Audience    : "観戦チャット",
     },
     sys : {
         cmd_make_room     : ["make_room"],

@@ -118,15 +118,12 @@ exports.LangTypeFormat = (0, ts_json_validator_1.obj)({
         room_GameLog: ts_json_validator_1.str,
         room_DebugLog: ts_json_validator_1.str,
         room_Living: ts_json_validator_1.str,
-        room_LivingVoice: ts_json_validator_1.str,
         room_Dead: ts_json_validator_1.str,
-        room_DeadVoice: ts_json_validator_1.str,
+        room_Audience: ts_json_validator_1.str,
     }),
     sys: (0, ts_json_validator_1.obj)({
         cmd_make_room: (0, ts_json_validator_1.arr)(ts_json_validator_1.str),
         cmd_delete_room: (0, ts_json_validator_1.arr)(ts_json_validator_1.str),
-        cmd_link_voice: (0, ts_json_validator_1.arr)(ts_json_validator_1.str),
-        cmd_unlink_voice: (0, ts_json_validator_1.arr)(ts_json_validator_1.str),
         cmd_list_GM: (0, ts_json_validator_1.arr)(ts_json_validator_1.str),
         cmd_list_Dev: (0, ts_json_validator_1.arr)(ts_json_validator_1.str),
         cmd_add_GM: (0, ts_json_validator_1.arr)(ts_json_validator_1.str),
@@ -163,9 +160,6 @@ exports.LangTypeFormat = (0, ts_json_validator_1.obj)({
         GM_removed: ts_json_validator_1.str,
         Dev_removed: ts_json_validator_1.str,
         Need_at_least_1_GM: ts_json_validator_1.str,
-        Link_Voice: ts_json_validator_1.str,
-        Link_Voice_Err: ts_json_validator_1.str,
-        Unlink_Voice: ts_json_validator_1.str,
         stop_timer: ts_json_validator_1.str,
         restart_timer: ts_json_validator_1.str,
         no_timer: ts_json_validator_1.str,
@@ -424,8 +418,6 @@ exports.LangTypeFormat = (0, ts_json_validator_1.obj)({
     })
 });
 exports.RuleTypeFormat = (0, ts_json_validator_1.obj)({
-    // roles : str
-    // role_nums : RolesOptNum,
     roles: Roles,
     first_victim_count: ts_json_validator_1.num,
     first_sight: (0, ts_json_validator_1.union)((0, ts_json_validator_1.literal)('no_sight'), (0, ts_json_validator_1.literal)('random'), (0, ts_json_validator_1.literal)('random_white')),
@@ -438,7 +430,7 @@ exports.RuleTypeFormat = (0, ts_json_validator_1.obj)({
         alert_times: (0, ts_json_validator_1.arr)(ts_json_validator_1.num),
     }),
     day: (0, ts_json_validator_1.obj)({
-        day_time: ts_json_validator_1.num,
+        length: ts_json_validator_1.num,
         reduction_time: ts_json_validator_1.num,
         alert_times: (0, ts_json_validator_1.arr)(ts_json_validator_1.num),
         cut_time: (0, ts_json_validator_1.union)((0, ts_json_validator_1.literal)('all'), (0, ts_json_validator_1.literal)('majority')),
@@ -463,36 +455,6 @@ exports.RuleTypeFormat = (0, ts_json_validator_1.obj)({
 exports.ServerSettingsFormat = (0, ts_json_validator_1.obj)({
     system_lang: ts_json_validator_1.str,
     token1: ts_json_validator_1.str,
-    // token2          : str,
-    // auto_voice_link : bool,
     system_GM: (0, ts_json_validator_1.arr)(ts_json_validator_1.str),
-    /*
-    http
-    :obj({
-        addr         : str,
-        ip           : str,
-        http_port    : str,
-        template_dir : str,
-        game_html    : str,
-        white_list   : arr(str),
-    }),
-    se
-    :obj({
-        times : arr(tuple(num, str)),
-        co    : str,
-        call  : str,
-    }),
-
-    music
-    :obj({
-        opening     : str,
-        first_night : str,
-        day_time    : str,
-        vote        : str,
-        night       : str,
-        good_win    : str,
-        evil_win    : str,
-    }),
-    */
 });
 //# sourceMappingURL=JsonType.js.map

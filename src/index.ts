@@ -69,7 +69,7 @@ function get_env(str : string){
         if(e == null) throw new Error("Env " + str + "doesn't exist!");
         res = e;
     } else {
-        res = str.substring(1)
+        res = str.substring(0)
     }
     return res;
 }
@@ -168,12 +168,13 @@ function has_room_all_game_channel_support_t (
 }
 
 function has_room_all_game_channel(catId : string, channels : Discord.GuildChannelManager, SrvLangTxt : LangType) : GameChannels | null{
-    const aWerewolf    = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_Werewolf"]   , channels); if(aWerewolf    == null) return null;
-    const aMason       = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_Mason"]      , channels); if(aMason       == null) return null;
-    const aGameLog     = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_GameLog"]    , channels); if(aGameLog     == null) return null;
-    const aDebugLog    = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_DebugLog"]   , channels); if(aDebugLog    == null) return null;
-    const aLiving      = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_Living"]     , channels); if(aLiving      == null) return null;
-    const aDead        = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_Dead"]       , channels); if(aDead        == null) return null;
+    const aWerewolf    = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_Werewolf"], channels); if(aWerewolf == null) return null;
+    const aMason       = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_Mason"]   , channels); if(aMason    == null) return null;
+    const aGameLog     = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_GameLog"] , channels); if(aGameLog  == null) return null;
+    const aDebugLog    = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_DebugLog"], channels); if(aDebugLog == null) return null;
+    const aLiving      = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_Living"]  , channels); if(aLiving   == null) return null;
+    const aDead        = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_Dead"]    , channels); if(aDead     == null) return null;
+    const aAudience    = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_Audience"], channels); if(aAudience == null) return null;
     return new GameChannels(
         aMason,
         aWerewolf,
@@ -181,6 +182,7 @@ function has_room_all_game_channel(catId : string, channels : Discord.GuildChann
         aDebugLog,
         aLiving,
         aDead,
+        aAudience,
     );
 }
 
@@ -192,20 +194,22 @@ async function make_room(message: Discord.Message, category_name: string, SrvLan
 
     message.channel.send(SrvLangTxt.p0.make_room)
     // const category_name = "game2"
-    let Mason       : Discord.TextChannel  | null = null;
-    let Werewolf    : Discord.TextChannel  | null = null;
-    let GameLog     : Discord.TextChannel  | null = null;
-    let DebugLog    : Discord.TextChannel  | null = null;
-    let Living      : Discord.TextChannel  | null = null;
-    let Dead        : Discord.TextChannel  | null = null;
+    let Mason       : Discord.TextChannel | null = null;
+    let Werewolf    : Discord.TextChannel | null = null;
+    let GameLog     : Discord.TextChannel | null = null;
+    let DebugLog    : Discord.TextChannel | null = null;
+    let Living      : Discord.TextChannel | null = null;
+    let Dead        : Discord.TextChannel | null = null;
+    let Audience    : Discord.TextChannel | null = null;
 
     const cat = await guild.channels.create({name: category_name, type : Discord.ChannelType.GuildCategory});
-    Mason       = await guild.channels.create({name: SrvLangTxt.game.room_Mason, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 1});
-    Werewolf    = await guild.channels.create({name: SrvLangTxt.game.room_Werewolf, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 2});
-    GameLog     = await guild.channels.create({name: SrvLangTxt.game.room_GameLog, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 3});
-    DebugLog    = await guild.channels.create({name: SrvLangTxt.game.room_DebugLog, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 4});
-    Living      = await guild.channels.create({name: SrvLangTxt.game.room_Living, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 5});
+    Mason       = await guild.channels.create({name: SrvLangTxt.game.room_Mason, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 2});
+    Werewolf    = await guild.channels.create({name: SrvLangTxt.game.room_Werewolf, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 3});
+    GameLog     = await guild.channels.create({name: SrvLangTxt.game.room_GameLog, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 4});
+    DebugLog    = await guild.channels.create({name: SrvLangTxt.game.room_DebugLog, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 5});
+    Living      = await guild.channels.create({name: SrvLangTxt.game.room_Living, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 6});
     Dead        = await guild.channels.create({name: SrvLangTxt.game.room_Dead, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 7});
+    Audience    = await guild.channels.create({name: SrvLangTxt.game.room_Audience, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 8});
     return new GameChannels(
         Mason,
         Werewolf,
@@ -213,6 +217,7 @@ async function make_room(message: Discord.Message, category_name: string, SrvLan
         DebugLog,
         Living,
         Dead,
+        Audience,
     );
 }
 

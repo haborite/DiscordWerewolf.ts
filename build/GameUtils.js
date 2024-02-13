@@ -36,18 +36,16 @@ class GameChannels {
     GameLog;
     DebugLog;
     Living;
-    LivingVoice;
     Dead;
-    DeadVoice;
-    constructor(aMason, aWerewolf, aGameLog, aDebugLog, aLiving, aLivingVoice, aDead, aDeadVoice) {
+    Audience;
+    constructor(aMason, aWerewolf, aGameLog, aDebugLog, aLiving, aDead, aAudience) {
         this.Mason = aMason;
         this.Werewolf = aWerewolf;
         this.GameLog = aGameLog;
         this.DebugLog = aDebugLog;
         this.Living = aLiving;
-        this.LivingVoice = aLivingVoice;
         this.Dead = aDead;
-        this.DeadVoice = aDeadVoice;
+        this.Audience = aAudience;
     }
     clear_category(client, parentID) {
         try {
@@ -93,7 +91,8 @@ exports.shuffle = shuffle;
 async function loadAttachedJson5(attachments) {
     const attachmentURL = attachments.first()?.url;
     if (attachmentURL) {
-        if (path.extname(attachmentURL).replace(/\?.*/, '') === '.json5') {
+        const extname = path.extname(attachmentURL).replace(/\?.*/, '');
+        if (extname === '.json5' || extname === '.txt') {
             try {
                 const res = await fetch(attachmentURL);
                 if (!res.ok) {

@@ -141,6 +141,7 @@ export const LangTypeFormat = obj({
         room_DebugLog    : str,
         room_Living      : str,
         room_Dead        : str,
+        room_Audience    : str,
     }),
 
     sys
@@ -511,8 +512,6 @@ export type LangType = TsType<typeof LangTypeFormat>;
 
 
 export const RuleTypeFormat = obj({
-    // roles : str
-    // role_nums : RolesOptNum,
 
     roles: Roles,
 
@@ -536,10 +535,9 @@ export const RuleTypeFormat = obj({
     }),
 
     day: obj({
-        day_time       : num,
+        length         : num,
         reduction_time : num,
-        alert_times      : arr(num),
-
+        alert_times    : arr(num),
         cut_time: union(
             literal('all' as const),
             literal('majority' as const),

@@ -60,10 +60,10 @@
     },
 
     day : {
-        day_time       : 600,
+        length         : 600,
         reduction_time :  60,
-        alert_times : [],
-        cut_time    : "majority",
+        alert_times    : [],
+        cut_time       : "majority",
     },
 
     night : {

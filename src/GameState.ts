@@ -2,9 +2,6 @@ import * as Discord from "discord.js";
 import {GameChannels, format, isThisCommand, assertUnreachable, shuffle, loadAndSetSysRuleSet, updateHashValueWithFormat} from "./GameUtils"
 import * as Util from "./GameUtils"
 import {LangType, RuleType, RolesStr, SeerPriestType, ServerSettingsType, RuleTypeFormat} from "./JsonType";
-// import * as path from 'path';
-// var JSON5 = require('json5');
-// import {validate} from 'ts-json-validator';
 
 export const Phase = {
     p0_UnStarted   : '0.UnStarted',
@@ -40,6 +37,8 @@ const TeamNames = stringToEnum([
     'Other'
 ]);
 type TeamNames = keyof typeof TeamNames;
+
+const WISHROLENUM = 3;
 
 function getDefaultTeams(r : Role){
     switch (r) {
@@ -88,34 +87,12 @@ function stringToEnum<T extends string>(o: T[]): {[K in T]: K} {
     }, Object.create(null));
 }
 
-
 function getUserMentionStrFromId(uid: string){
     return "<@!" + uid + ">"
 }
 
 function getUserMentionStr(user: Discord.User){
     return "<@!" + user.id + ">"
-}
-
-// Binary string to ASCII (base64)
-function btoa(bin : string) {
-    return Buffer.from(bin, 'binary').toString('base64');
-}
-
-function bnToB64(bn : bigint) {
-    var hex = BigInt(bn).toString(16);
-    if (hex.length % 2) { hex = '0' + hex; }
-    var bin = [];
-    var i = 0;
-    var d;
-    var b;
-    while (i < hex.length) {
-      d = parseInt(hex.slice(i, i + 2), 16);
-      b = String.fromCharCode(d);
-      bin.push(b);
-      i += 2;
-    }
-    return btoa(bin.join('')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
 function getNicknameFromMes(message : Discord.Message){
@@ -577,7 +554,7 @@ export default class GameState {
         }
 
         let timetable_txt = "";
-        timetable_txt += this.langTxt.timetable.day_length.txt + ": " + this.getTimeFormatFromSec(this.ruleSetting.day.day_time) + "\n";
+        timetable_txt += this.langTxt.timetable.day_length.txt + ": " + this.getTimeFormatFromSec(this.ruleSetting.day.length) + "\n";
         timetable_txt += this.langTxt.timetable.night_length.txt + ": " + this.getTimeFormatFromSec(this.ruleSetting.night.length) + "\n";
         timetable_txt += this.langTxt.timetable.votetime_length.txt + ": " + this.getTimeFormatFromSec(this.ruleSetting.vote.length) + "\n";
 
@@ -652,14 +629,14 @@ export default class GameState {
 
     // Phase 0 start
     async start_0Unstarted() {
-        console.log("tstart_0Unstarted");
+        console.log("Phase 0: Unstarted");
         this.phase = Phase.p0_UnStarted;
         this.sendRuleSummary(this.channels.Living);
     }
 
     // Phase 1 start
     async start_1Wanted() {
-        console.log("tstart_1Wanted");
+        console.log("Phase 1: Recruitment");
         this.phase = Phase.p1_Wanted;
         this.updateRoomsRW();
         this.sendRuleSummary(this.channels.Living);
@@ -680,7 +657,7 @@ export default class GameState {
         if(this.guild == null) return this.err();
         let permGMonly      : Discord.OverwriteResolvable[] = [{id: this.guild.id, allow: NoAccess_alw, deny:  NoAccess_dny}];
         let permReadOnly    : Discord.OverwriteResolvable[] = [{id: this.guild.id, allow: NoAccess_alw, deny:  NoAccess_dny}];
-        const cu1 = this.clients[0].user;
+        // const cu1 = this.clients[0].user;
         if (this.guild.members.me != null) {
             addPerm(this.guild.members.me.id, Perm.Admin, permGMonly);
             addPerm(this.guild.members.me.id, Perm.Admin, permReadOnly);
@@ -693,25 +670,30 @@ export default class GameState {
         let permDead        : Discord.OverwriteResolvable[] = [];
         let permWerewolf    : Discord.OverwriteResolvable[] = [];
         let permMason       : Discord.OverwriteResolvable[] = [];
+        let permIndividual  : Discord.OverwriteResolvable[] = [];
+        let permAudience    : Discord.OverwriteResolvable[] = [];
 
         switch (this.phase) {
             case Phase.p0_UnStarted:
             case Phase.p1_Wanted:
                 // for @everyone
-                addPerm(this.guild.id, Perm.RW      , permLiving     );
-                addPerm(this.guild.id, Perm.ReadOnly, permDead       );
-                addPerm(this.guild.id, Perm.ViewOnly, permWerewolf   );
-                addPerm(this.guild.id, Perm.ViewOnly, permMason      );
+                addPerm(this.guild.id, Perm.RW      , permLiving   );
+                addPerm(this.guild.id, Perm.ReadOnly, permDead     );
+                addPerm(this.guild.id, Perm.ViewOnly, permWerewolf );
+                addPerm(this.guild.id, Perm.ViewOnly, permMason    );
+                addPerm(this.guild.id, Perm.RW      , permAudience );
                 break;
             case Phase.p2_Preparation:
                 // for @everyone(Guest)
-                addPerm(this.guild.id, Perm.NoAccess, permMason      );
-                addPerm(this.guild.id, Perm.NoAccess, permWerewolf   );
-                addPerm(this.guild.id, Perm.ReadOnly, permLiving     );
-                addPerm(this.guild.id, Perm.NoAccess, permDead       );
+                addPerm(this.guild.id, Perm.NoAccess, permMason    );
+                addPerm(this.guild.id, Perm.NoAccess, permWerewolf );
+                addPerm(this.guild.id, Perm.ReadOnly, permLiving   );
+                addPerm(this.guild.id, Perm.NoAccess, permDead     );
+                addPerm(this.guild.id, Perm.RW      , permAudience );
                 for (const uid in this.members) {
+                    addPerm(uid, Perm.NoAccess, permAudience);
                     addPerm(uid, Perm.RW,       permLiving);
-                    addPerm(uid, Perm.NoAccess, permDead       );
+                    addPerm(uid, Perm.NoAccess, permDead);
                     if (this.members[uid].allowWolfRoom) {
                         addPerm(uid, Perm.ReadOnly, permWerewolf);
                     } else {
@@ -726,13 +708,15 @@ export default class GameState {
                 break;
             case Phase.p3_FirstNight:
                 // for @everyone(Guest)
-                addPerm(this.guild.id, Perm.NoAccess, permMason      );
-                addPerm(this.guild.id, Perm.NoAccess, permWerewolf   );
-                addPerm(this.guild.id, Perm.ReadOnly, permLiving     );
-                addPerm(this.guild.id, Perm.NoAccess, permDead       );
+                addPerm(this.guild.id, Perm.NoAccess, permMason    );
+                addPerm(this.guild.id, Perm.NoAccess, permWerewolf );
+                addPerm(this.guild.id, Perm.ReadOnly, permLiving   );
+                addPerm(this.guild.id, Perm.NoAccess, permDead     );
+                addPerm(this.guild.id, Perm.RW      , permAudience );
                 for(const uid in this.members) {
+                    addPerm(uid, Perm.NoAccess, permAudience);
                     addPerm(uid, Perm.ReadOnly, permLiving);
-                    addPerm(uid, Perm.NoAccess, permDead       );
+                    addPerm(uid, Perm.NoAccess, permDead);
                     if (this.members[uid].allowWolfRoom) {
                         addPerm(uid, Perm.RW,       permWerewolf);
                     } else {
@@ -747,17 +731,20 @@ export default class GameState {
                 break;
             case Phase.p4_Daytime:
                 // for @everyone(Guest)
-                addPerm(this.guild.id, Perm.NoAccess, permMason      );
-                addPerm(this.guild.id, Perm.NoAccess, permWerewolf   );
-                addPerm(this.guild.id, Perm.ReadOnly, permLiving     );
-                addPerm(this.guild.id, Perm.NoAccess, permDead       );
+                addPerm(this.guild.id, Perm.NoAccess, permMason    );
+                addPerm(this.guild.id, Perm.NoAccess, permWerewolf );
+                addPerm(this.guild.id, Perm.ReadOnly, permLiving   );
+                addPerm(this.guild.id, Perm.NoAccess, permDead     );
+                addPerm(this.guild.id, Perm.RW      , permAudience );
                 for(const uid in this.members) {
+                    addPerm(uid, Perm.NoAccess, permAudience);
                     if(this.members[uid].isLiving) {
                         addPerm(uid, Perm.RW,       permLiving);
-                        addPerm(uid, Perm.NoAccess, permDead       );
+                        addPerm(uid, Perm.NoAccess, permDead);
                     } else {
                         addPerm(uid, Perm.ReadOnly, permLiving);
-                        addPerm(uid, Perm.RW,       permDead       );
+                        addPerm(uid, Perm.RW,       permDead);
+                        addPerm(uid, Perm.ReadOnly, permIndividual);
                     }
                     if (this.members[uid].allowWolfRoom) {
                         const enableDaytimeWolfRoom = true;
@@ -783,11 +770,13 @@ export default class GameState {
                 break;
             case Phase.p5_Vote:
                 // for @everyone(Guest)
-                addPerm(this.guild.id, Perm.NoAccess, permMason      );
-                addPerm(this.guild.id, Perm.NoAccess, permWerewolf   );
-                addPerm(this.guild.id, Perm.ReadOnly, permLiving     );
-                addPerm(this.guild.id, Perm.NoAccess, permDead       );
+                addPerm(this.guild.id, Perm.NoAccess, permMason    );
+                addPerm(this.guild.id, Perm.NoAccess, permWerewolf );
+                addPerm(this.guild.id, Perm.ReadOnly, permLiving   );
+                addPerm(this.guild.id, Perm.NoAccess, permDead     );
+                addPerm(this.guild.id, Perm.RW      , permAudience );
                 for(const uid in this.members) {
+                    addPerm(uid, Perm.NoAccess, permAudience);
                     if(this.members[uid].isLiving) {
                         if(this.ruleSetting.vote.talk){
                             addPerm(uid, Perm.RW,       permLiving);
@@ -797,7 +786,8 @@ export default class GameState {
                         addPerm(uid, Perm.NoAccess, permDead       );
                     } else {
                         addPerm(uid, Perm.ReadOnly, permLiving);
-                        addPerm(uid, Perm.RW,       permDead       );
+                        addPerm(uid, Perm.RW,       permDead);
+                        addPerm(uid, Perm.ReadOnly, permIndividual);
                     }
                     if (this.members[uid].allowWolfRoom) {
                         if(this.members[uid].isLiving) {
@@ -821,17 +811,20 @@ export default class GameState {
                 break;
             case Phase.p6_Night:
                 // for @everyone(Guest)
-                addPerm(this.guild.id, Perm.NoAccess, permMason      );
-                addPerm(this.guild.id, Perm.NoAccess, permWerewolf   );
-                addPerm(this.guild.id, Perm.ReadOnly, permLiving     );
-                addPerm(this.guild.id, Perm.NoAccess, permDead       );
+                addPerm(this.guild.id, Perm.NoAccess, permMason    );
+                addPerm(this.guild.id, Perm.NoAccess, permWerewolf );
+                addPerm(this.guild.id, Perm.ReadOnly, permLiving   );
+                addPerm(this.guild.id, Perm.NoAccess, permDead     );
+                addPerm(this.guild.id, Perm.RW      , permAudience );
                 for(const uid in this.members) {
+                    addPerm(uid, Perm.NoAccess, permAudience);
                     if(this.members[uid].isLiving) {
                         addPerm(uid, Perm.ReadOnly, permLiving);
                         addPerm(uid, Perm.NoAccess, permDead       );
                     } else {
                         addPerm(uid, Perm.ReadOnly, permLiving);
-                        addPerm(uid, Perm.RW,       permDead       );
+                        addPerm(uid, Perm.RW,       permDead);
+                        addPerm(uid, Perm.ReadOnly, permIndividual);
                     }
                     if (this.members[uid].allowWolfRoom){
                         if(this.members[uid].isLiving) {
@@ -855,24 +848,38 @@ export default class GameState {
                 break;
             case Phase.p7_GameEnd:
                 // for @everyone(Guest)
-                addPerm(this.guild.id, Perm.RW, permMason      );
-                addPerm(this.guild.id, Perm.RW, permWerewolf   );
-                addPerm(this.guild.id, Perm.RW, permLiving     );
-                addPerm(this.guild.id, Perm.RW, permDead       );
+                addPerm(this.guild.id, Perm.RW, permMason);
+                addPerm(this.guild.id, Perm.RW, permWerewolf);
+                addPerm(this.guild.id, Perm.RW, permLiving);
+                addPerm(this.guild.id, Perm.RW, permDead);
+                addPerm(this.guild.id, Perm.RW, permIndividual);
+                addPerm(this.guild.id, Perm.RW, permAudience );
                 break;
             default:
                 assertUnreachable(this.phase);
         }
         if (this.guild.members.me != null) {
-            addPerm(this.guild.members.me.id, Perm.Admin, permLiving     );
-            addPerm(this.guild.members.me.id, Perm.Admin, permDead       );
-            addPerm(this.guild.members.me.id, Perm.Admin, permWerewolf   );
-            addPerm(this.guild.members.me.id, Perm.Admin, permMason      );
+            addPerm(this.guild.members.me.id, Perm.Admin, permLiving);
+            addPerm(this.guild.members.me.id, Perm.Admin, permDead);
+            addPerm(this.guild.members.me.id, Perm.Admin, permWerewolf);
+            addPerm(this.guild.members.me.id, Perm.Admin, permMason);
+            addPerm(this.guild.members.me.id, Perm.Admin, permIndividual);
+            addPerm(this.guild.members.me.id, Perm.Admin, permAudience);
         }
         this.channels.Living.permissionOverwrites.set(permLiving);
         this.channels.Dead.permissionOverwrites.set(permDead);
         this.channels.Werewolf.permissionOverwrites.set(permWerewolf);
         this.channels.Mason.permissionOverwrites.set(permMason);
+        this.channels.Audience.permissionOverwrites.set(permAudience);
+
+        // TO DO
+        for (const uid in this.members) {
+            console.log("to do");
+            const uch = this.members[uid].uchannel;
+            if (uch != null) {
+                uch.permissionOverwrites.set(permIndividual);
+            }
+        }
 
         // const LiveID = this.channels.LivingVoice.id;
         // const DeadID = this.channels.DeadVoice.id;
@@ -1309,7 +1316,7 @@ export default class GameState {
             
             // Create wishRoleButton
             let rolesTxt = "";
-            for(const r in this.defaultRoles){
+            for (const r in this.defaultRoles) {
                 if(this.defaultRoles[r] <= 0) continue;
                 rolesTxt += this.langTxt.role_uni[r as Role] + " " + this.langTxt.role[r as Role] + "\n";
             }
@@ -1318,17 +1325,17 @@ export default class GameState {
                 description : this.langTxt.p2.wish_role_desc2 + "\n\n" + rolesTxt,
                 color       : this.langTxt.sys.system_color,
             });
-            for(const uid in this.members){
+            for (const uid in this.members) {
                 this.members[uid].wishRole = Object.create(null);
-                for(const r in this.defaultRoles){
+                for (const r in this.defaultRoles) {
                     if(this.defaultRoles[r] <= 0) continue;
-                    this.members[uid].wishRole[r]    = 3;
+                    this.members[uid].wishRole[r] = Math.ceil(WISHROLENUM / 2);
                 }
                 const uch = this.members[uid].uchannel;
                 if (uch  == null) continue;
 
                 const buttons_arr : Discord.ActionRowBuilder<Discord.ButtonBuilder>[] = [];
-                for(const r in this.defaultRoles){
+                for (const r in this.defaultRoles) {
                     buttons_arr.push(this.makeWishRoleButtons(uid, r as Role));
                 }
                 const components_arr: Discord.ActionRowBuilder<Discord.ButtonBuilder>[][] = Util.arrange_components(buttons_arr);
@@ -1351,11 +1358,11 @@ export default class GameState {
     }
 
     // Create role wish buttons
-    makeWishRoleButtons (uid : string, r : Role) {
+    makeWishRoleButtons(uid : string, r : Role) {
         const col = new Discord.ActionRowBuilder<Discord.ButtonBuilder>();
         const runi = this.langTxt.role_uni[r];
         const now = this.members[uid].wishRole[r];
-        for(let i = 1; i <= 5; ++i) {
+        for(let i = 1; i <= WISHROLENUM; ++i) {
             if (i == now) {
                 col.addComponents(
                     Util.make_button(
@@ -1379,7 +1386,7 @@ export default class GameState {
     wishRoleCheck(interaction : Discord.ButtonInteraction){
         type AorB = Discord.ActionRowBuilder<Discord.ButtonBuilder> | Discord.ActionRow<Discord.MessageActionRowComponent>;
         const value = parseInt(interaction.customId[0]);
-        if (value < 1 || value > 5) return;
+        if (value < 1 || value > WISHROLENUM) return;
         const roleStr = interaction.customId.substring(2);
         const roleName= Object.keys(this.defaultRoles).find(role => role == roleStr) as Role | null;
         if(roleName == null) return;
@@ -1668,7 +1675,7 @@ export default class GameState {
             .replace(/[\s\(\)\{\}\\\/\[\]\*\+\.\?\^\$\|!"#%&'=~`<>@[;:,]/g, '');
     }
 
-    // Search user channel
+    // Search user channel, if not found, create user channel
     async searchUserChannel(message : Discord.Message){
         if(message.guild == null) return this.err();
 
@@ -1680,12 +1687,12 @@ export default class GameState {
             const ch_name = this.getUserChannelName(this.members[uid].nickname);
 
             let perm : Discord.OverwriteResolvable[] = [];
-            perm.push({id: message.guild.id, allow: NoAccess_alw, deny:  NoAccess_dny});
+            perm.push({id: message.guild.id, allow: NoAccess_alw, deny: NoAccess_dny});
             message.guild.members.cache.forEach(m => {
                 if (this.clients[0].user != null && m.id === this.clients[0].user.id) {
-                    perm.push({id: m.id, allow: Admin_alw, deny:  Admin_dny});
+                    perm.push({id: m.id, allow: Admin_alw, deny: Admin_dny});
                 } else if (m.id === uid){
-                    perm.push({id: m.id, allow: RW_alw, deny:  RW_dny});
+                    perm.push({id: m.id, allow: RW_alw, deny: RW_dny});
                 }
             });
             const guild = message.guild;
@@ -1903,7 +1910,7 @@ export default class GameState {
             }
         }
 
-        this.remTime = Math.max(0, this.ruleSetting.day.day_time - this.ruleSetting.day.reduction_time * (this.dayNumber - 1));
+        this.remTime = Math.max(0, this.ruleSetting.day.length - this.ruleSetting.day.reduction_time * (this.dayNumber - 1));
         this.channels.Living.send({embeds:[{
             title       : format(this.langTxt.p4.length_of_the_day, {time : this.getTimeFormatFromSec(this.remTime)}),
             color       : this.langTxt.sys.system_color,
