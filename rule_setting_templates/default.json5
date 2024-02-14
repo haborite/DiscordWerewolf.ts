@@ -26,23 +26,23 @@
         },
         Mason: {
             count: 2, 
-            first_victim: false,
+            first_victim: true,
         },
         Dictator: {
             count: 1, 
-            first_victim: false,
+            first_victim: true,
         },
         Baker: {
             count: 1, 
-            first_victim: false,
+            first_victim: true,
         },
         Communicatable: {
             count: 1, 
-            first_victim: false,
+            first_victim: true,
         },
         Fanatic: {
             count: 1, 
-            first_victim: false,
+            first_victim: true,
         },
     },
 

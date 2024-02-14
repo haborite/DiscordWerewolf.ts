@@ -1,12 +1,12 @@
 {
     game : {
-        room_Werewolf    : "人狼チャット",
-        room_Mason       : "共有者チャット",
+        room_Werewolf    : "人狼部屋",
+        room_Mason       : "共有部屋",
         room_GameLog     : "ゲームログ",
         room_DebugLog    : "デバッグログ",
-        room_Living      : "生存者チャット",
-        room_Dead        : "霊界チャット",
-        room_Audience    : "観戦チャット",
+        room_Living      : "生存者",
+        room_Dead        : "墓場",
+        room_Audience    : "観戦席",
     },
     sys : {
         cmd_make_room     : ["make_room"],
@@ -49,7 +49,7 @@
         killed_color    : 0xf20a0a,
         no_killed_color : 0x9bfaf8,
 
-        user_room_name : "個人・{user}",
+        user_room_name : "個室・{user}",
 
         GM_added    : "GM が追加されました．現在次の方が GM です : ",
         Dev_added   : "デベロッパー が追加されました．デベロッパーになると全員の役職情報などにアクセスできます．現在次の方が デベロッパー です : ",
@@ -61,9 +61,15 @@
         restart_timer     : "タイマーを再開しました．現在 {time} です．",
         no_timer          : "現在稼働中のタイマーはありません．",
 
+        rule_format_error : "ルール設定に失敗しました. 書式に誤りがあります.\n{error}",
+        set_role_error    : "ルール設定に失敗しました. 役職の書式に誤りがあります.\n{error}",
+        set_rules_error   : "ルール設定に失敗しました. 設定を見直してください.\n{error}",
+        too_much_first_victim : "欠けうる人数（{given}人）が初日犠牲者の数（{req}人）に足りていません.",
+
         Current_role_breakdown       : "現在のルール設定は，以下の通りです．",
         Current_role_breakdown_sum   : "合計 : {num} 人",
         Current_join_member_num      : "現在の参加者：{num} 人 / 募集：{max} 人",
+        Current_player_sum           : "　(うちプレイヤー {num} 人)",
 
         time_formatMS  : "{min}分{sec}秒",
         time_formatM   : "{min}分",

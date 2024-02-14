@@ -198,9 +198,15 @@ export const LangTypeFormat = obj({
         restart_timer  : str,
         no_timer       : str,
 
+        rule_format_error : str,
+        set_role_error    : str,
+        set_rules_error   : str,
+        too_much_first_victim : str,
+
         Current_role_breakdown       : str,
         Current_role_breakdown_sum   : str,
         Current_join_member_num      : str,
+        Current_player_sum           : str,
 
         time_formatMS     : str,
         time_formatM      : str,

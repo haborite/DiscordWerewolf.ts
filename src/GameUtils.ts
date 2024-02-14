@@ -74,7 +74,7 @@ export function shuffle<T>(array: T[]) {
     return out;
 }
 
-export async function loadAttachedJson5(
+export async function getTextFromAttachedJson5(
     attachments: Discord.Collection<string, Discord.Attachment>
 ) {
     const attachmentURL = attachments.first()?.url;
@@ -85,15 +85,13 @@ export async function loadAttachedJson5(
                 const res = await fetch(attachmentURL);
                 if (!res.ok) {
                     console.log(`HTTP error! Status: ${res.status}`);
-                    return 
+                    return ""
                 }
                 const txt = await res.text();
-                const json5_content = JSON5.parse(txt);
-                const ret = validate(RuleTypeFormat, json5_content);
-                return ret         
+                return txt        
             } catch (error) {
-                console.error('Error parsing JSON5 file:', error);
-                return
+                console.error('Error in reading the file:', error);
+                return ""
             }
         }
     }
@@ -110,6 +108,33 @@ export function loadAndSetSysRuleSet(path : string, RuleSet ?: RuleType){
         return ret;
     } catch (e) {
         console.log(e);
+    }
+}
+
+export function ParseRuleStr(txt : string) {
+    let json5_content;
+    try {
+        json5_content = JSON5.parse(txt);
+    } catch (e: unknown) {
+        if (e instanceof Error) {
+            console.log('This is not a JSON5-formated text: ', e.message);
+            return [e.message, undefined]
+        } else {
+            console.log('This is not a JSON5-formated text.');
+            return ['This is not a JSON5-formated text.', undefined]
+        }
+    }
+    try {
+        const ret = validate(RuleTypeFormat, json5_content);
+        return ["success", ret]
+    } catch (e: unknown) {
+        if (e instanceof Error) {
+            console.log('Invalid rule format: ', e.message);
+            return [e.message, undefined]
+        } else {
+            console.log('Invalid rule format.');
+            return ['Invalid rule format.', undefined]
+        }
     }
 }
 

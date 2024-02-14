@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateHashValueWithFormat = exports.arrange_components = exports.arrange_buttons = exports.make_button = exports.loadAndSetSysRuleSet = exports.loadAttachedJson5 = exports.shuffle = exports.assertUnreachable = exports.isThisCommand = exports.format = exports.GameChannels = void 0;
+exports.updateHashValueWithFormat = exports.arrange_components = exports.arrange_buttons = exports.make_button = exports.ParseRuleStr = exports.loadAndSetSysRuleSet = exports.getTextFromAttachedJson5 = exports.shuffle = exports.assertUnreachable = exports.isThisCommand = exports.format = exports.GameChannels = void 0;
 const Discord = __importStar(require("discord.js"));
 const fs = __importStar(require("fs"));
 const ts_json_validator_1 = require("ts-json-validator");
@@ -88,7 +88,7 @@ function shuffle(array) {
     return out;
 }
 exports.shuffle = shuffle;
-async function loadAttachedJson5(attachments) {
+async function getTextFromAttachedJson5(attachments) {
     const attachmentURL = attachments.first()?.url;
     if (attachmentURL) {
         const extname = path.extname(attachmentURL).replace(/\?.*/, '');
@@ -97,21 +97,19 @@ async function loadAttachedJson5(attachments) {
                 const res = await fetch(attachmentURL);
                 if (!res.ok) {
                     console.log(`HTTP error! Status: ${res.status}`);
-                    return;
+                    return "";
                 }
                 const txt = await res.text();
-                const json5_content = JSON5.parse(txt);
-                const ret = (0, ts_json_validator_1.validate)(JsonType_1.RuleTypeFormat, json5_content);
-                return ret;
+                return txt;
             }
             catch (error) {
-                console.error('Error parsing JSON5 file:', error);
-                return;
+                console.error('Error in reading the file:', error);
+                return "";
             }
         }
     }
 }
-exports.loadAttachedJson5 = loadAttachedJson5;
+exports.getTextFromAttachedJson5 = getTextFromAttachedJson5;
 function loadAndSetSysRuleSet(path, RuleSet) {
     const data = fs.readFileSync(path, 'utf-8');
     const json5 = JSON5.parse(data);
@@ -127,6 +125,37 @@ function loadAndSetSysRuleSet(path, RuleSet) {
     }
 }
 exports.loadAndSetSysRuleSet = loadAndSetSysRuleSet;
+function ParseRuleStr(txt) {
+    let json5_content;
+    try {
+        json5_content = JSON5.parse(txt);
+    }
+    catch (e) {
+        if (e instanceof Error) {
+            console.log('This is not a JSON5-formated text: ', e.message);
+            return [e.message, undefined];
+        }
+        else {
+            console.log('This is not a JSON5-formated text.');
+            return ['This is not a JSON5-formated text.', undefined];
+        }
+    }
+    try {
+        const ret = (0, ts_json_validator_1.validate)(JsonType_1.RuleTypeFormat, json5_content);
+        return ["success", ret];
+    }
+    catch (e) {
+        if (e instanceof Error) {
+            console.log('Invalid rule format: ', e.message);
+            return [e.message, undefined];
+        }
+        else {
+            console.log('Invalid rule format.');
+            return ['Invalid rule format.', undefined];
+        }
+    }
+}
+exports.ParseRuleStr = ParseRuleStr;
 function make_button(id, label, opt) {
     const res = new Discord.ButtonBuilder().setCustomId(id).setLabel(label);
     if (opt.emoji)

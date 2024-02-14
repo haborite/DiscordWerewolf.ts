@@ -270,7 +270,7 @@ async function on_message(bid : number, message : Discord.Message){
             if (guild1_old == null) return;
             
             const sub_string = message.content.substring(SrvLangTxt.sys.cmd_make_room[cmd_idx].length).replace(/ <@[^>]*>/g, '');
-            const category_name = sub_string ? sub_string : "game3";  
+            const category_name = sub_string ? sub_string : "game";  
             const ch = await make_room(message, category_name, SrvLangTxt);
             const guild1 = await guild1_old.fetch();
             if(guild1 == null) return;

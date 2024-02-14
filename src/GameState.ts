@@ -413,99 +413,150 @@ export default class GameState {
     }
 
     // Set roles from the rule setting
-    setRoles2(r : RuleType) {
-        this.defaultRoles = Object.create(null);
-        this.possibleFirstVictimRoles = Object.create(null);
-        this.reqMemberNum = -this.ruleSetting.first_victim_count;
+    setRoles2(r : RuleType): boolean {
+        let defaultRoles = Object.create(null);
+        let possibleFirstVictimRoles = Object.create(null);
+        let reqMemberNum = -r.first_victim_count;
+        let possible_first_victim_count = 0;
         if (r.roles.Villager) {
             const count = r.roles.Villager.count;
             if (count > 0) {
-                this.defaultRoles["Villager"] = count;
-                this.possibleFirstVictimRoles["Villager"] = r.roles.Villager.first_victim;
-                this.reqMemberNum += count;
+                defaultRoles["Villager"] = count;
+                possibleFirstVictimRoles["Villager"] = r.roles.Villager.first_victim;
+                if (r.roles.Villager.first_victim) {
+                    possible_first_victim_count += count;
+                }
+                reqMemberNum += count;
             }
         }
         if (r.roles.Seer) {
             const count = r.roles.Seer.count;
             if (count > 0) {
-                this.defaultRoles["Seer"]  = count;
-                this.possibleFirstVictimRoles["Seer"] = r.roles.Seer.first_victim;
-                this.reqMemberNum += count;
+                defaultRoles["Seer"]  = count;
+                possibleFirstVictimRoles["Seer"] = r.roles.Seer.first_victim;
+                if (r.roles.Seer.first_victim) {
+                    possible_first_victim_count += count;
+                }
+                reqMemberNum += count;
             }
         }
         if (r.roles.Priest) {
             const count = r.roles.Priest.count;
             if (count > 0) {
-                this.defaultRoles["Priest"] = count;
-                this.possibleFirstVictimRoles["Priest"] = r.roles.Priest.first_victim;
-                this.reqMemberNum += count;
+                defaultRoles["Priest"] = count;
+                possibleFirstVictimRoles["Priest"] = r.roles.Priest.first_victim;
+                if (r.roles.Priest.first_victim) {
+                    possible_first_victim_count += count;
+                }
+                reqMemberNum += count;
             }
         }
         if (r.roles.Knight) {
             const count = r.roles.Knight.count;
             if (count > 0) {
-                this.defaultRoles["Knight"] = count
-                this.possibleFirstVictimRoles["Knight"] = r.roles.Knight.first_victim;
-                this.reqMemberNum += count;
+                defaultRoles["Knight"] = count
+                possibleFirstVictimRoles["Knight"] = r.roles.Knight.first_victim;
+                if (r.roles.Knight.first_victim) {
+                    possible_first_victim_count += count;
+                }
+                reqMemberNum += count;
             }
         }
         if (r.roles.Traitor) {
             const count = r.roles.Traitor.count;
             if (count > 0) {
-                this.defaultRoles["Traitor"] = count;
-                this.possibleFirstVictimRoles["Traitor"] = r.roles.Traitor.first_victim;
-                this.reqMemberNum += count;
+                defaultRoles["Traitor"] = count;
+                possibleFirstVictimRoles["Traitor"] = r.roles.Traitor.first_victim;
+                if (r.roles.Traitor.first_victim) {
+                    possible_first_victim_count += count;
+                }
+                reqMemberNum += count;
             }
         }
         if (r.roles.Mason) {
             const count = r.roles.Mason.count;
             if (count > 0) {
-                this.defaultRoles["Mason"] = count;
-                this.possibleFirstVictimRoles["Mason"] = r.roles.Mason.first_victim;
-                this.reqMemberNum += count;
+                defaultRoles["Mason"] = count;
+                possibleFirstVictimRoles["Mason"] = r.roles.Mason.first_victim;
+                if (r.roles.Mason.first_victim) {
+                    possible_first_victim_count += count;
+                }
+                reqMemberNum += count;
             }
         }
         if (r.roles.Werewolf) {
             const count = r.roles.Werewolf.count;
             if (count > 0) {
-                this.defaultRoles["Werewolf"] = count;
-                this.possibleFirstVictimRoles["Werewolf"] = r.roles.Werewolf.first_victim;
-                this.reqMemberNum += count;
+                defaultRoles["Werewolf"] = count;
+                possibleFirstVictimRoles["Werewolf"] = r.roles.Werewolf.first_victim;
+                if (r.roles.Werewolf.first_victim) {
+                    possible_first_victim_count += count;
+                }
+                reqMemberNum += count;
             }
         }
         if (r.roles.Dictator) {
             const count = r.roles.Dictator.count;
             if (count > 0) {
-                this.defaultRoles["Dictator"] = count;
-                this.possibleFirstVictimRoles["Dictator"] = r.roles.Dictator.first_victim;
-                this.reqMemberNum += count;
+                defaultRoles["Dictator"] = count;
+                possibleFirstVictimRoles["Dictator"] = r.roles.Dictator.first_victim;
+                if (r.roles.Dictator.first_victim) {
+                    possible_first_victim_count += count;
+                }
+                reqMemberNum += count;
             }
         }
         if (r.roles.Baker) {
             const count = r.roles.Baker.count;
             if (count > 0) {
-                this.defaultRoles["Baker"] = count;
-                this.possibleFirstVictimRoles["Baker"] = r.roles.Baker.first_victim;
-                this.reqMemberNum += count;
+                defaultRoles["Baker"] = count;
+                possibleFirstVictimRoles["Baker"] = r.roles.Baker.first_victim;
+                if (r.roles.Baker.first_victim) {
+                    possible_first_victim_count += count;
+                }
+                reqMemberNum += count;
             }
         }
         if (r.roles.Communicatable) {
             const count = r.roles.Communicatable.count;
             if (count > 0) {
-                this.defaultRoles["Communicatable"] = count;
-                this.possibleFirstVictimRoles["Communicatable"] = r.roles.Communicatable.first_victim;
-                this.reqMemberNum += count;
+                defaultRoles["Communicatable"] = count;
+                possibleFirstVictimRoles["Communicatable"] = r.roles.Communicatable.first_victim;
+                if (r.roles.Communicatable.first_victim) {
+                    possible_first_victim_count += count;
+                }
+                reqMemberNum += count;
             }
         }
         if (r.roles.Fanatic) {
             const count = r.roles.Fanatic.count;
             if (count > 0) {
-                this.defaultRoles["Fanatic"] = count;
-                this.possibleFirstVictimRoles["Fanatic"] = r.roles.Fanatic.first_victim;
-                this.reqMemberNum += count;
+                defaultRoles["Fanatic"] = count;
+                possibleFirstVictimRoles["Fanatic"] = r.roles.Fanatic.first_victim;
+                if (r.roles.Fanatic.first_victim) {
+                    possible_first_victim_count += count;
+                }
+                reqMemberNum += count;
             }
         }           
         console.log(this.defaultRoles);
+        if (possible_first_victim_count >= r.first_victim_count) {
+            this.defaultRoles = defaultRoles;
+            this.possibleFirstVictimRoles = possibleFirstVictimRoles;
+            this.reqMemberNum = reqMemberNum;
+            return true
+        } else {
+            console.log("Too much first victim");
+            this.sendErr(
+                this.channels.Living,
+                "",
+                format(
+                    this.langTxt.sys.too_much_first_victim,
+                    {req: r.first_victim_count, given: possible_first_victim_count}
+                )
+            );
+            return false
+        }
     }
 
     // Add a given role 
@@ -580,10 +631,11 @@ export default class GameState {
             name: this.langTxt.timetable.title,
             value: timetable_txt, inline: false 
         });
-
+        const all_cnt_txt = format(this.langTxt.sys.Current_role_breakdown_sum, {num : all_cnt});
+        const plyr_cnt_txt = format(this.langTxt.sys.Current_player_sum, {num : all_cnt - this.ruleSetting.first_victim_count});
         tch.send({embeds: [{
             title: this.langTxt.sys.Current_role_breakdown,
-            description : format(this.langTxt.sys.Current_role_breakdown_sum, {num : all_cnt}),
+            description : all_cnt_txt + plyr_cnt_txt,
             color: this.langTxt.sys.system_color,
             fields : fields,
         }]});
@@ -652,8 +704,8 @@ export default class GameState {
     // Update authentications of the rooms
     updateRoomsRW() {
         if(this.guild == null) return this.err();
-        let permGMonly      : Discord.OverwriteResolvable[] = [{id: this.guild.id, allow: NoAccess_alw, deny:  NoAccess_dny}];
-        let permReadOnly    : Discord.OverwriteResolvable[] = [{id: this.guild.id, allow: NoAccess_alw, deny:  NoAccess_dny}];
+        let permGMonly      : Discord.OverwriteResolvable[] = [{id: this.guild.id, allow: NoAccess_alw, deny: NoAccess_dny}];
+        let permReadOnly    : Discord.OverwriteResolvable[] = [{id: this.guild.id, allow: ReadOnly_alw, deny: NoAccess_dny}];
         // const cu1 = this.clients[0].user;
         if (this.guild.members.me != null) {
             addPerm(this.guild.members.me.id, Perm.Admin, permGMonly);
@@ -874,10 +926,8 @@ export default class GameState {
         this.channels.Mason.permissionOverwrites.set(permMason);
         this.channels.Audience.permissionOverwrites.set(permAudience);
 
-        // TO DO
         for (const uid in this.members) {
             const _permIndividual = structuredClone(permIndividual);
-            console.log("to do");
             addPerm(uid, Perm.RW, _permIndividual);
             const uch = this.members[uid].uchannel;
             if (uch != null) {
@@ -1196,7 +1246,8 @@ export default class GameState {
                 this.sendErr(
                     this.channels.Living,
                     "",
-                    format(this.langTxt.p1.err_join_admin, {user_m : getUserMentionStr(message.author), cmd : this.langTxt.p1.cmd_join_force[0]}));
+                    format(this.langTxt.p1.err_join_admin, {user_m : getUserMentionStr(message.author), cmd : this.langTxt.p1.cmd_join_force[0]})
+                );
                 ng = true;
             }
         }
@@ -2437,7 +2488,7 @@ export default class GameState {
             this.channels.Living.send(txt);
             if (now >= req) {
                 const updated_remTime = Math.min(12, this.remTime)
-                this.channels.Living.send(format(this.langTxt.p4.cut_time_approved, updated_remTime));
+                this.channels.Living.send(format(this.langTxt.p4.cut_time_approved, {cut_time: updated_remTime}));
                 this.remTime = updated_remTime;
             }
         }
@@ -2667,6 +2718,44 @@ export default class GameState {
         }
     }
 
+    loadRuleFromStr(text: string) {
+        console.log("LOAD RULE");
+        console.log(text);
+        const ret = Util.ParseRuleStr(text);
+        if (ret[0] === "success") {
+            try {
+                const rule = ret[1] as RuleType;
+                if (!this.setRoles2(rule)) {
+                    return
+                }
+                this.ruleSetting = rule;
+            } catch (e: unknown) {
+                let set_rules_error = "";
+                if (e instanceof Error) {
+                    console.log('Cannot set rules: ', e.message);
+                    set_rules_error += e.message;
+                } else {
+                    console.log('Cannot set rules.');
+                }
+                this.sendErr(
+                    this.channels.Living,
+                    "",
+                    format(this.langTxt.sys.set_rules_error, {error: set_rules_error}),
+                );
+                return
+            }
+            this.interactControllers[InteractType.Accept] = {};
+            this.start_1Wanted();
+            console.log(ret);             
+        } else {
+            this.sendErr(
+                this.channels.Living,
+                "",
+                format(this.langTxt.sys.rule_format_error, {error: ret[0]}),
+            );
+        }
+    }
+
     async interactCommand(interaction : Discord.ButtonInteraction){
 
         console.log("interactCommand");
@@ -2809,36 +2898,38 @@ export default class GameState {
             return
         }
 
-        // Phase 0 or 1: Load JSON setting file
+        // Phase 0 or 1:
         if ((this.phase == Phase.p0_UnStarted) || (this.phase == Phase.p1_Wanted)) {
+            // Load uploaded JSON setting file
             const attachments = message.attachments;
             if (attachments.size > 0) {
-                if (this.phase == Phase.p0_UnStarted || this.phase == Phase.p1_Wanted ) {
-                    const ret = await Util.loadAttachedJson5(attachments);
-                    if (ret != null) {
-                        this.ruleSetting = ret;
-                        this.setRoles2(ret);
-                        this.interactControllers[InteractType.Accept] = {};
-                        this.start_1Wanted();
-                        console.log(ret);
+                if (this.phase == Phase.p0_UnStarted || this.phase == Phase.p1_Wanted) {
+                    const text = await Util.getTextFromAttachedJson5(attachments);
+                    if (text) {
+                        this.loadRuleFromStr(text);
                     }
                 }
+                return
+            }
+            // Load JSON text setting message
+            const text = message.content.trim();
+            if (text.startsWith("{")) {
+                this.loadRuleFromStr(text);
+                return
+            }
+            // Delete room
+            if (isThisCommand(message.content, this.langTxt.p0.cmd_delete_room) >= 0) {
+                // TODO: clear前に各chのvisibility変更
+                this.channels.clear_category(this.clients[0], this.parentID);
+                return
             }
         }
 
         // Phase0: Unstarted commands
         if (this.phase == Phase.p0_UnStarted ) {
-            
             // Start game
             if (isThisCommand(message.content, this.langTxt.p0.cmd_start) >= 0) {
                 this.start_1Wanted();
-                return
-            }
-            
-            // Delete room
-            if (isThisCommand(message.content, this.langTxt.p0.cmd_delete_room) >= 0) {
-                // TODO: clear前に各chのvisibility変更
-                this.channels.clear_category(this.clients[0], this.parentID);
                 return
             }
             return
