@@ -173,10 +173,6 @@ function loadAndSetServerSetting(default_path, server_setting_files) {
     if (res == null)
         throw new Error('ServerSetting is Wrong!');
     res.token1 = get_env(res.token1);
-    // res.token2 = get_env(res.token2);
-    // res.http.addr = get_env(res.http.addr);
-    // res.http.ip        = get_env(res.http.ip);
-    // res.http.http_port = get_env(res.http.http_port);
     let GMs = [];
     for (const s of res.system_GM) {
         const t = get_env(s).split(' ');

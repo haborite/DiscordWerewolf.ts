@@ -544,7 +544,7 @@ export const RuleTypeFormat = obj({
         length         : num,
         reduction_time : num,
         alert_times    : arr(num),
-        cut_time: union(
+        skip_vote_rule : union(
             literal('all' as const),
             literal('majority' as const),
         ),

@@ -2421,7 +2421,7 @@ export default class GameState {
         if (interaction.customId != "cut_time") return;
         const isAdd = true; // TODO
         const liveNum =  Object.keys(this.members).reduce((acc, value) => { return acc + (this.members[value].isLiving?1:0);}, 0);
-        const reqRule = this.ruleSetting.day.cut_time;
+        const reqRule = this.ruleSetting.day.skip_vote_rule;
         const req = (reqRule == "majority") ? (liveNum + 1) / 2 | 0 : liveNum;
         if (!isAdd) {
             delete this.cutTimeMember[uid];
@@ -2436,8 +2436,9 @@ export default class GameState {
             interaction.reply(txt);
             this.channels.Living.send(txt);
             if (now >= req) {
-                this.channels.Living.send(format(this.langTxt.p4.cut_time_approved, this.ruleSetting.day.reduction_time));
-                this.remTime = Math.min(12, this.remTime);
+                const updated_remTime = Math.min(12, this.remTime)
+                this.channels.Living.send(format(this.langTxt.p4.cut_time_approved, updated_remTime));
+                this.remTime = updated_remTime;
             }
         }
     }

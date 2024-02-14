@@ -46,10 +46,10 @@
         },
     },
 
-    first_victim_count : 1,
-    first_sight : "random_white",
-    continuous_guard  : false,
-    confirmation_sec  : 30,
+    first_victim_count : 8,
+    first_sight        : "random_white",
+    continuous_guard   : false,
+    confirmation_sec   : 30,
 
     wish_role_rand_weight : 3,
     wish_role_time        : 30,
@@ -61,27 +61,26 @@
 
     day : {
         length         : 600,
-        reduction_time :  60,
-        alert_times    : [],
-        cut_time       : "majority",
+        reduction_time : 0,
+        alert_times    : [30, 60, 120],
+        skip_vote_rule : "majority",
     },
 
     night : {
         length      : 180,
-        alert_times : [],
+        alert_times : [30, 60],
     },
 
     after_game : {
-        length      : 3000,
+        length      : 30,
         alert_times : [],
     },
 
     vote : {
         length      : 60,
-        alert_times : [],
+        alert_times : [30],
         talk        : false,
         place       : "after_open",
-
         revote_num  : 0,
         when_even   : "random",
     },
