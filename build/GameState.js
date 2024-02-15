@@ -788,6 +788,7 @@ class GameState {
                         addPerm(uid, 1 /* Perm.ReadOnly */, permLiving);
                         addPerm(uid, 3 /* Perm.RW */, permDead);
                         addPerm(uid, 1 /* Perm.ReadOnly */, permIndividual);
+                        addPerm(uid, 1 /* Perm.ReadOnly */, permAudience);
                     }
                     if (this.members[uid].allowWolfRoom) {
                         const enableDaytimeWolfRoom = true;
@@ -838,6 +839,7 @@ class GameState {
                         addPerm(uid, 1 /* Perm.ReadOnly */, permLiving);
                         addPerm(uid, 3 /* Perm.RW */, permDead);
                         addPerm(uid, 1 /* Perm.ReadOnly */, permIndividual);
+                        addPerm(uid, 1 /* Perm.ReadOnly */, permAudience);
                     }
                     if (this.members[uid].allowWolfRoom) {
                         if (this.members[uid].isLiving) {
@@ -881,6 +883,7 @@ class GameState {
                         addPerm(uid, 1 /* Perm.ReadOnly */, permLiving);
                         addPerm(uid, 3 /* Perm.RW */, permDead);
                         addPerm(uid, 1 /* Perm.ReadOnly */, permIndividual);
+                        addPerm(uid, 1 /* Perm.ReadOnly */, permAudience);
                     }
                     if (this.members[uid].allowWolfRoom) {
                         if (this.members[uid].isLiving) {
@@ -939,92 +942,13 @@ class GameState {
                 uch.permissionOverwrites.set(_permIndividual);
             }
         }
-        // const LiveID = this.channels.LivingVoice.id;
-        // const DeadID = this.channels.DeadVoice.id;
         for (const uid in this.members) {
             const m_old = this.members[uid].member;
             if (m_old == null)
                 continue;
             m_old.fetch().then(m => {
-                // if(m.voice.channel == null) {
-                //     m.voice;
-                //     return;
-                // }
-                // let Li = permLivingVoice.findIndex(a => a.id == uid);
-                // let Di = permDeadVoice.findIndex(a => a.id == uid);
-                // if(Li < 0) Li = permLivingVoice.findIndex(a => a.id == this.guild.id);
-                // if(Di < 0) Di = permDeadVoice.findIndex(a => a.id == this.guild.id);
-                // if(Li < 0) this.err();
-                // if(Di < 0) this.err();
-                /*
-                if(m.voice.channel.id == LiveID){
-                    const allowL = permLivingVoice[Li].allow;
-                    if(allowL == RW_alw){
-                        m.voice.setMute(false);
-                    } else {
-                        const allowD = permDeadVoice[Di].allow;
-                        if(allowD == null) return;
-                        if(allowD == RW_alw){
-                            m.voice.setChannel(DeadID);
-                            m.voice.setMute(false);
-                        } else {
-                            m.voice.setMute(true);
-                        }
-                    }
-                } else if(m.voice.channel.id == DeadID){
-                    const allowD = permDeadVoice[Di].allow;
-                    if(allowD == RW_alw){
-                        m.voice.setMute(false);
-                    } else  {
-                        const allowL = permLivingVoice[Li].allow;
-                        if(allowL == null) return;
-                        if(allowL == RW_alw){
-                            m.voice.setChannel(LiveID);
-                            m.voice.setMute(false);
-                        } else {
-                            m.voice.setMute(true);
-                        }
-                    }
-                } else {
-                    m.voice.setMute(false);
-                }
-                */
             });
         }
-        /*
-        this.channels.LivingVoice.fetch().then(v => {
-            v.members.forEach(m => {
-                if(m.id in this.members) return;
-                if(cu1 != null && m.id == cu1.id) return;
-                const Li = permLivingVoice.findIndex(a => a.id == this.guild.id);
-                if(Li < 0) this.err();
-                const allowL = permLivingVoice[Li].allow;
-                if(allowL == RW_alw){
-                    m.voice.setMute(false);
-                } else {
-                    m.voice.setChannel(LiveID);
-                }
-            })
-        })
-        */
-        /*
-         this.channels.DeadVoice.fetch().then(v => {
-             v.members.forEach(m => {
-                 if(m.id in this.members) return;
-                 if(cu1 != null && m.id == cu1.id) return;
-                 const Di = permDeadVoice.findIndex(a => a.id == this.guild.id);
-                 if(Di < 0) this.err();
-                 const allowD = permDeadVoice[Di].allow;
-                 if(allowD == RW_alw){
-                     m.voice.setMute(false);
-                 } else if(allowD == ReadOnly_alw){
-                     m.voice.setMute(false);
-                 } else {
-                     m.voice.disconnect();
-                 }
-             })
-         })
-         */
     }
     // Clear all joined members
     resetReactedMember() {
