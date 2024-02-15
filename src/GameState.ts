@@ -80,6 +80,18 @@ function SightResult(r : Role){
     }
 }
 
+function current_unix_time(): number {
+    return Math.round(Date.now() / 1000)
+}
+
+function hhmmss_str(unix_time_str: number): string {
+    return "<t:" + unix_time_str + ":T>"
+}
+
+function date_str(unix_time_str: number): string {
+    return "<t:" + unix_time_str + ":D>"
+}
+
 function stringToEnum<T extends string>(o: T[]): {[K in T]: K} {
     return o.reduce((accumulator, currentValue) => {
       accumulator[currentValue] = currentValue;
@@ -1797,8 +1809,15 @@ export default class GameState {
         }
         
         this.channels.Living.send({embeds:[{
-            title       : format(this.langTxt.p3.length_of_the_first_night, {time : this.getTimeFormatFromSec(this.remTime)}),
-            color       : this.langTxt.sys.system_color,
+            title: format(
+                this.langTxt.p3.length_of_the_first_night,
+                {
+                    time: this.getTimeFormatFromSec(this.remTime),
+                    date: date_str(current_unix_time() + this.remTime),
+                    hhmmss: hhmmss_str(current_unix_time() + this.remTime),
+                }
+            ),
+            color: this.langTxt.sys.system_color,
         }]});
         // this.httpGameState.updatePhase(this.langTxt.p3.phase_name);
         this.stopTimerRequest = false;
@@ -1890,8 +1909,15 @@ export default class GameState {
 
         this.remTime = Math.max(0, this.ruleSetting.day.length - this.ruleSetting.day.reduction_time * (this.dayNumber - 1));
         this.channels.Living.send({embeds:[{
-            title       : format(this.langTxt.p4.length_of_the_day, {time : this.getTimeFormatFromSec(this.remTime)}),
-            color       : this.langTxt.sys.system_color,
+            title: format(
+                this.langTxt.p4.length_of_the_day,
+                {
+                    time : this.getTimeFormatFromSec(this.remTime),
+                    date: date_str(current_unix_time() + this.remTime),
+                    hhmmss: hhmmss_str(current_unix_time() + this.remTime),
+                }
+            ),
+            color: this.langTxt.sys.system_color,
         }]});
         this.daytimeStartTime = Date.now();
         await this.makeDictatorController();
@@ -1980,8 +2006,14 @@ export default class GameState {
         //! no use "this."
         if(this.voteNum === 0){
             this.channels.Living.send({embeds:[{
-                title       : format(this.langTxt.p5.end_daytime, {time : this.getTimeFormatFromSec(this.ruleSetting.vote.length)}),
-                color       : this.langTxt.sys.system_color,
+                title: format(
+                    this.langTxt.p5.end_daytime,
+                    {
+                        time : this.getTimeFormatFromSec(this.ruleSetting.vote.length),
+                        date: date_str(current_unix_time() + this.ruleSetting.vote.length),
+                        hhmmss: hhmmss_str(current_unix_time() + this.ruleSetting.vote.length),
+                    }),
+                color: this.langTxt.sys.system_color,
             }]});
         }
 
@@ -2202,7 +2234,14 @@ export default class GameState {
         this.remTime = this.ruleSetting.night.length;
         this.updateRoomsRW();
 
-        const nightComingMessage = format(this.langTxt.p6.start, {time : this.getTimeFormatFromSec(this.remTime)});
+        const nightComingMessage = format(
+            this.langTxt.p6.start,
+            {
+                time : this.getTimeFormatFromSec(this.remTime),
+                date: date_str(current_unix_time() + this.remTime),
+                hhmmss: hhmmss_str(current_unix_time() + this.remTime),
+            }
+        );
         const nightComingEmbed = {embeds:[new Discord.EmbedBuilder({
             title       : nightComingMessage,
             color       : this.langTxt.sys.system_color,

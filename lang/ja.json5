@@ -293,7 +293,7 @@
         wish_role_preparations : "部屋の準備が完了しました．役職希望が有効です．希望がある場合は個人チャットで {sec}秒以内に役職の希望を行ってください．",
         wish_role_desc1        : "役職希望が有効です．希望がある場合は{sec}秒以内に下の希望度ボタンを押してください．大きい番号ほど、高希望度です．",
         wish_role_desc2        : "注意：希望が通らない場合も充分あります．ある役職を誰かが希望してても，希望していない人に割り当てられる可能性もあります．",
-        wish_role_desc3        : "希望度のランダム加算幅 : {n} 　(大きい数字ほど希望が通りやすい)",
+        wish_role_desc3        : "",
         wish_role_desc_wish    : "希望する役職がある場合は選択してください（希望度 +1）",
         wish_role_desc_nowish  : "希望しない役職がある場合は選択してください（希望度 -2）",
         wish_role_req          : "現在の希望度：",
@@ -303,7 +303,7 @@
         no_sight           : "初夜の占いはありません．",
         random_sight       : "占いの結果です．初夜の占いはランダムに決定します．人狼が出る可能性もあります．",
         random_white_sight : "占いの結果です．初夜の占いは人狼以外からランダムに決定します．",
-        length_of_the_first_night : "初夜の時間は {time} です"
+        length_of_the_first_night : "初夜の時間は {time} です（{date} {hhmmss}まで）",
     },
 
     p4 : {
@@ -314,7 +314,7 @@
 
         day_number        : "{n} 日目",
         living_and_num    : "生存者({n}人)",
-        length_of_the_day : "昼の議論時間は {time} です",
+        length_of_the_day : "昼の議論時間は {time} です（{date} {hhmmss}まで）",
 
 
         co_call_cuttime_title : "役職のカミングアウト、相手の白・黒コール",
@@ -341,9 +341,9 @@
     },
     p5 : {
         phase_name        : "{n}日目 投票",
-        end_daytime       : "本日の処刑者を決める投票の時間です．制限時間は {time} です",
+        end_daytime       : "本日の処刑者を決める投票の時間です．制限時間は {time} です（{date} {hhmmss}まで）",
         start_vote        : "投票の時間です",
-        vote_title        : "{n}日目{time}の投票の時間です. 参加者は以下のボタンから投票先を選択してください（何度でも選び直せます）.",
+        vote_title        : "{n}日目{time}の投票の時間です. 参加者は以下のボタンから投票先を選択してください（時間内なら選び直せます）.",
         vote_desc         : "{user} 本日処刑したい人の番号の絵文字へリアクションしてください．",
         vote_list         : "投票先",
 
@@ -362,8 +362,8 @@
         after_open_title   : "{n}日目{time} 投票結果", //
         revote             : "{n}日目{time}：票が割れたため，再投票を行います",
         final_even         : "{n}日目{time}：投票の結果，本日の処刑は無しとなりました",
-        after_open_format  : "{from}  {n} 票  投票先　→　{to}",
-        after_open_format_n: "{from}  {n} 票  投票無し",
+        after_open_format  : "{from}  （{n} 票）  投票先　→　{to}",
+        after_open_format_n: "{from}  （{n} 票）  投票無し",
         after_open_anonym  : "{n} 票 {from}",
         after_no_open      : "投票情報は非公開です",
         living_num         : "生存者：残り {n} 人",
@@ -371,7 +371,7 @@
     
     p6 : {
         phase_name        : "{n}日目 夜",
-        start : "夜の時間が始まりました．時間は {time} です．",
+        start : "夜の時間が始まりました．時間は {time} です（{date} {hhmmss}まで）．",
     },
 
     p7 : {
@@ -410,7 +410,7 @@
         is_wolf        : "{user} さんは人狼です {emo} ",
         no_result      : "今晩の占いは出来ませんでした．占える対象が居ない可能性があります．",
 
-        title          : "今晩，占う相手を選択してください",
+        title          : "今晩，占う相手を選択してください（時間内なら選び直せます）",
         list         : "候補",
         result_title   : "占い結果  {user}",
         same_team_role : "この結果が出る候補",
@@ -430,7 +430,7 @@
     },
 
     knight : {
-        title        : "今晩，守る人を選択してください",
+        title        : "今晩，守る人を選択してください（時間内なら選び直せます）",
         list         : "候補",
         already      : "{user} さんの選択は既に行われています．選択を変えるには他の人を選択してください．取り消しはできません．",
         accept       : "{user} さんを守ります",
@@ -440,7 +440,7 @@
 
     werewolf : {
         start_room_title : "{names}さんは人狼陣営です",
-        title            : "今晩，襲撃する相手を選択してください",
+        title            : "今晩，襲撃する相手を選択してください（時間内なら選び直せます）",
         list             : "候補",
         already          : "{user} さんへの襲撃は既に設定されています．対象を変えるには他の人を選択してください．取り消しはできません．",
         accept           : "{user} さんを襲撃します",

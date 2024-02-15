@@ -95,6 +95,15 @@ function SightResult(r) {
             (0, GameUtils_1.assertUnreachable)(r);
     }
 }
+function current_unix_time() {
+    return Math.round(Date.now() / 1000);
+}
+function hhmmss_str(unix_time_str) {
+    return "<t:" + unix_time_str + ":T>";
+}
+function date_str(unix_time_str) {
+    return "<t:" + unix_time_str + ":D>";
+}
 function stringToEnum(o) {
     return o.reduce((accumulator, currentValue) => {
         accumulator[currentValue] = currentValue;
@@ -1786,7 +1795,11 @@ class GameState {
             this.killNext.push(["0", 0]);
         }
         this.channels.Living.send({ embeds: [{
-                    title: (0, GameUtils_1.format)(this.langTxt.p3.length_of_the_first_night, { time: this.getTimeFormatFromSec(this.remTime) }),
+                    title: (0, GameUtils_1.format)(this.langTxt.p3.length_of_the_first_night, {
+                        time: this.getTimeFormatFromSec(this.remTime),
+                        date: date_str(current_unix_time() + this.remTime),
+                        hhmmss: hhmmss_str(current_unix_time() + this.remTime),
+                    }),
                     color: this.langTxt.sys.system_color,
                 }] });
         // this.httpGameState.updatePhase(this.langTxt.p3.phase_name);
@@ -1876,7 +1889,11 @@ class GameState {
         }
         this.remTime = Math.max(0, this.ruleSetting.day.length - this.ruleSetting.day.reduction_time * (this.dayNumber - 1));
         this.channels.Living.send({ embeds: [{
-                    title: (0, GameUtils_1.format)(this.langTxt.p4.length_of_the_day, { time: this.getTimeFormatFromSec(this.remTime) }),
+                    title: (0, GameUtils_1.format)(this.langTxt.p4.length_of_the_day, {
+                        time: this.getTimeFormatFromSec(this.remTime),
+                        date: date_str(current_unix_time() + this.remTime),
+                        hhmmss: hhmmss_str(current_unix_time() + this.remTime),
+                    }),
                     color: this.langTxt.sys.system_color,
                 }] });
         this.daytimeStartTime = Date.now();
@@ -1954,7 +1971,11 @@ class GameState {
         //! no use "this."
         if (this.voteNum === 0) {
             this.channels.Living.send({ embeds: [{
-                        title: (0, GameUtils_1.format)(this.langTxt.p5.end_daytime, { time: this.getTimeFormatFromSec(this.ruleSetting.vote.length) }),
+                        title: (0, GameUtils_1.format)(this.langTxt.p5.end_daytime, {
+                            time: this.getTimeFormatFromSec(this.ruleSetting.vote.length),
+                            date: date_str(current_unix_time() + this.ruleSetting.vote.length),
+                            hhmmss: hhmmss_str(current_unix_time() + this.ruleSetting.vote.length),
+                        }),
                         color: this.langTxt.sys.system_color,
                     }] });
         }
@@ -2179,7 +2200,11 @@ class GameState {
         this.phase = exports.Phase.p6_Night;
         this.remTime = this.ruleSetting.night.length;
         this.updateRoomsRW();
-        const nightComingMessage = (0, GameUtils_1.format)(this.langTxt.p6.start, { time: this.getTimeFormatFromSec(this.remTime) });
+        const nightComingMessage = (0, GameUtils_1.format)(this.langTxt.p6.start, {
+            time: this.getTimeFormatFromSec(this.remTime),
+            date: date_str(current_unix_time() + this.remTime),
+            hhmmss: hhmmss_str(current_unix_time() + this.remTime),
+        });
         const nightComingEmbed = { embeds: [new Discord.EmbedBuilder({
                     title: nightComingMessage,
                     color: this.langTxt.sys.system_color,
