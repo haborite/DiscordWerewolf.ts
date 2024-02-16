@@ -95,6 +95,7 @@ function SightResult(r) {
             (0, GameUtils_1.assertUnreachable)(r);
     }
 }
+const my_sleep = (msec) => new Promise(resolve => setTimeout(resolve, msec));
 function current_unix_time() {
     return Math.round(Date.now() / 1000);
 }
@@ -299,6 +300,7 @@ class GameState {
     wolfLog;
     dictatorVoteMode = "";
     timerList;
+    magicnumber;
     // Game construction method
     constructor(clients, upperGames, guild, ch, parentID, srvLangTxt, srvRuleSetting, srvSetting) {
         this.clients = clients;
@@ -325,6 +327,7 @@ class GameState {
         this.wolfValidFrom = [];
         this.wolfLog = [];
         this.timerList = [];
+        this.magicnumber = 0;
         this.reset();
         this.setRoles2(this.ruleSetting);
         this.phase = exports.Phase.p0_UnStarted;
@@ -1242,7 +1245,8 @@ class GameState {
         this.updateWantedEmb(null);
     }
     // Check player count requirement and prepare the game if met || return recruitment status if not met 
-    async tryPreparingGame(message) {
+    async tryPreparingGame(message, idx) {
+        // Check player count requirement
         const current_num = Object.keys(this.members).length;
         if (current_num < this.reqMemberNum) {
             this.channels.Living.send((0, GameUtils_1.format)(this.langTxt.p1.member_not_enough, { num: current_num, rem: this.reqMemberNum - current_num }));
@@ -1252,7 +1256,67 @@ class GameState {
             this.channels.Living.send((0, GameUtils_1.format)(this.langTxt.p1.member_over, { num: current_num, over: current_num - this.reqMemberNum }));
             return;
         }
-        await this.gamePreparation(message);
+        // gameTimer(this.gameId, this, Phase.p2_Preparation, [], dummy_gamePreparation);
+        const scheduled_datetime_str = message.content.substring(this.langTxt.p1.cmd_start[idx].length).trim();
+        console.log(scheduled_datetime_str);
+        let scheduled_unixtime = 0;
+        const scheduled_datetime = new Date(scheduled_datetime_str);
+        console.log(scheduled_datetime);
+        if (isNaN(scheduled_datetime.getTime())) {
+            console.log("not converted to datetime");
+            if (scheduled_datetime_str === "") {
+                await this.gamePreparation(message);
+            }
+            return;
+        }
+        scheduled_unixtime = Math.round(scheduled_datetime.getTime() / 1000);
+        const role_assign_unixtime = scheduled_unixtime + this.ruleSetting.wish_role_time;
+        const role_assign_datetime = new Date(role_assign_unixtime * 1000);
+        const daytime_start_unixtime = role_assign_unixtime + this.ruleSetting.first_night.first_night_time;
+        const daytime_start_datetime = new Date(daytime_start_unixtime * 1000);
+        const wish_start_datetime_desc = (0, GameUtils_1.format)(this.langTxt.sys.wish_start_datetime_desc, { datetime: scheduled_datetime.toLocaleString("ja-JP") });
+        const role_assign_datetime_desc = (0, GameUtils_1.format)(this.langTxt.sys.role_assign_datetime_desc, { datetime: role_assign_datetime.toLocaleString("ja-JP") });
+        const daytime_start_datetime_desc = (0, GameUtils_1.format)(this.langTxt.sys.daytime_start_datetime_desc, { datetime: daytime_start_datetime.toLocaleString("ja-JP") });
+        let schedule_desc = role_assign_datetime_desc + "\n" + daytime_start_datetime_desc;
+        if (this.ruleSetting.wish_role_time > 0) {
+            schedule_desc = wish_start_datetime_desc + "\n" + schedule_desc;
+        }
+        this.channels.Living.send({ embeds: [{
+                    title: this.langTxt.sys.scheduled_start,
+                    description: schedule_desc,
+                    color: this.langTxt.sys.system_color,
+                }] });
+        // const target_unix_time = current_unix_time() + 60;
+        if (scheduled_unixtime === 0) {
+            return;
+        }
+        console.log(scheduled_unixtime);
+        let waiting = true;
+        let go_next = false;
+        const current_mn = 0 + this.magicnumber;
+        while (waiting) {
+            const now = current_unix_time();
+            if (now >= scheduled_unixtime) {
+                waiting = false;
+                go_next = true;
+            }
+            if (current_mn != this.magicnumber) {
+                waiting = false;
+                go_next = false;
+            }
+            console.log(now);
+            await my_sleep(1000);
+        }
+        if (go_next) {
+            await this.gamePreparation(message);
+        }
+        else {
+            this.channels.Living.send({ embeds: [{
+                        title: "cancel",
+                        description: "開始がキャンセルされました",
+                        color: this.langTxt.sys.system_color,
+                    }] });
+        }
     }
     // Reset the game and start recruiting players again
     async nextGame() {
@@ -1438,8 +1502,7 @@ class GameState {
     // Remove first victims, assign roles, prepare common rooms, send messages, start the first night
     async gamePreparation2() {
         console.log("gamePreparation2");
-        const enable_confirmation = (this.ruleSetting.wish_role_time <= 0);
-        console.log(`enable_confirmation: ${enable_confirmation}`);
+        const enable_confirmation = ((this.ruleSetting.wish_role_time <= 0) && (this.ruleSetting.confirmation_sec > 0));
         // Remove first victims
         let possible_victims_as_roles = [];
         for (const r in this.defaultRoles) {
@@ -2798,6 +2861,11 @@ class GameState {
         }
         const isDeveloper = (message.author.id in this.developer);
         const isGM = isDeveloper || (message.author.id in this.GM);
+        // Cancel command
+        if ((0, GameUtils_1.isThisCommand)(message.content, this.langTxt.sys.cmd_cancel) >= 0) {
+            this.magicnumber += 1;
+            return;
+        }
         // Sys: Cotinue command
         if ((0, GameUtils_1.isThisCommand)(message.content, this.langTxt.p7.cmd_continue) >= 0) {
             await this.nextGame();
@@ -2917,8 +2985,10 @@ class GameState {
                 return;
             }
             // Start
-            if ((0, GameUtils_1.isThisCommand)(message.content, this.langTxt.p1.cmd_start) >= 0) {
-                await this.tryPreparingGame(message);
+            let idx2 = 0;
+            idx2 = (0, GameUtils_1.isThisCommand)(message.content, this.langTxt.p1.cmd_start);
+            if (idx2 >= 0) {
+                await this.tryPreparingGame(message, idx2);
                 return;
             }
             return;
@@ -3010,13 +3080,85 @@ function gameTimer(gid, obj, tPhase, alert_times, func, callFromTimer = false) {
         obj.timerList.push(setTimeout(gameTimer, 1000, gid, obj, tPhase, alert_times, func, true));
     }
 }
+// Improved game timer of the game. Do not use "this." in the function.
+function gameTimer2(gid, obj, tPhase, alert_times, func, callFromTimer = false) {
+    //! no use "this."
+    console.log(obj.remTime);
+    if (gid != obj.gameId) {
+        console.log(`gid: ${gid} != obj.gameId: ${obj.gameId}`);
+        return;
+    }
+    ;
+    if (obj.phase != tPhase) {
+        console.log(`obj.phase: ${obj.phase} != tPhase: ${tPhase}`);
+        return;
+    }
+    ;
+    obj.isTimerProgress = true;
+    if (obj.stopTimerRequest) {
+        console.log("Receive external timer stop request.");
+        obj.timerList.push(setTimeout(gameTimer, 1000, gid, obj, tPhase, alert_times, func, true));
+        return;
+    }
+    if (alert_times.find(v => v === obj.remTime) != null) {
+        console.log("alert_times.find(v => v === obj.remTime) != null");
+        const text = (0, GameUtils_1.format)(obj.langTxt.sys.remaining_time, { time: obj.getTimeFormatFromSec(obj.remTime) });
+        if (obj.phase == exports.Phase.p3_FirstNight) {
+            console.log("obj.phase == Phase.p3_FirstNight");
+            obj.channels.Werewolf.send(text);
+        }
+        else if (obj.phase == exports.Phase.p5_Vote) {
+            console.log("obj.phase == Phase.p5_Vote");
+            obj.broadcastLivingUserChannel(text);
+        }
+        else if (obj.phase == exports.Phase.p6_Night) {
+            console.log("obj.phase == Phase.p6_Night");
+            obj.channels.Werewolf.send(text);
+            for (const uid in obj.members) {
+                if (!obj.members[uid].isLiving)
+                    continue;
+                const uch = obj.members[uid].uchannel;
+                if (uch == null)
+                    continue;
+                const role = obj.members[uid].role;
+                switch (role) {
+                    case Role.Seer:
+                    case Role.Knight:
+                        uch.send(text);
+                }
+            }
+        }
+        obj.channels.Living.send(text);
+    }
+    if (obj.remTime <= 0) {
+        console.log("timer finished!");
+        obj.channels.Living.send(obj.langTxt.sys.time_is_up);
+        obj.isTimerProgress = false;
+        func(gid, obj);
+    }
+    else {
+        obj.remTime -= 1;
+        obj.timerList.push(setTimeout(gameTimer, 1000, gid, obj, tPhase, alert_times, func, true));
+    }
+}
 ////////////////////////////////////////////
 // dummys
 ////////////////////////////////////////////
-async function dummy_gamePreparation2(gid, obj) {
-    console.log("function dummy_gamePreparation2");
+/*
+async function dummy_gamePreparation(gid : number, obj : GameState) {
+    console.log("function dummy_gamePreparation");
     if (gid != obj.gameId) {
         console.log("something wrong.");
+        console.log(`gid: ${gid} != obj.gameId: ${obj.gameId}`);
+        return
+    } else {
+        console.log(`gid: ${gid} == obj.gameId: ${obj.gameId}`);
+        await obj.gamePreparation();
+    };
+}
+*/
+async function dummy_gamePreparation2(gid, obj) {
+    if (gid != obj.gameId) {
         console.log(`gid: ${gid} != obj.gameId: ${obj.gameId}`);
         return;
     }

@@ -148,6 +148,7 @@ export const LangTypeFormat = obj({
     :obj({
         cmd_make_room    : arr(str),
         cmd_delete_room  : arr(str),
+        cmd_cancel       : arr(str),
         cmd_list_GM      : arr(str),
         cmd_list_Dev     : arr(str),
         cmd_add_GM       : arr(str),
@@ -207,6 +208,11 @@ export const LangTypeFormat = obj({
         Current_role_breakdown_sum   : str,
         Current_join_member_num      : str,
         Current_player_sum           : str,
+
+        scheduled_start             : str,
+        wish_start_datetime_desc    : str,
+        role_assign_datetime_desc   : str,
+        daytime_start_datetime_desc : str,
 
         time_formatMS     : str,
         time_formatM      : str,

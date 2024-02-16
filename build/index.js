@@ -241,7 +241,6 @@ async function make_room(message, category_name, SrvLangTxt) {
 async function on_message(bid, message) {
     if (clients[0].user == null || message.author.id == clients[0].user.id)
         return;
-    // if (clients[1].user == null || message.author.id == clients[1].user.id) return;
     if (message.content.startsWith('^ping1')) {
         if (bid == 0)
             message.channel.send("pong 1!");
@@ -258,7 +257,6 @@ async function on_message(bid, message) {
     }
     if (bid == 1)
         return;
-    // console.log("text > ", message.content);
     const message_channel = message.channel;
     if (SysLangTxt != null && SysRuleSet != null && ('parentId' in message_channel)) {
         const SrvLangTxt = SysLangTxt;
@@ -274,7 +272,6 @@ async function on_message(bid, message) {
                 const guild1 = message.guild;
                 const ch = has_room_all_game_channel(paID, guild1.channels, SrvLangTxt);
                 if (ch != null) {
-                    // Games[paID] = new GameState(clients, Games, message.guild, guild2, ch, ch2, paID, httpServer, SrvLangTxt, SrvRuleSet, ServerSetting);
                     Games[paID] = new GameState_1.default(clients, Games, message.guild, ch, paID, SrvLangTxt, SrvRuleSet, ServerSetting);
                     ch.Living.send(SrvLangTxt.p0.rediscovered_room);
                     Games[paID].start_0Unstarted();
@@ -302,7 +299,6 @@ async function on_message(bid, message) {
             const pa = ch.Living.parentId;
             if (pa == null)
                 return;
-            // Games[pa] = new GameState(clients, Games, guild1, guild2, ch, ch2, pa, httpServer, SrvLangTxt, SrvRuleSet, ServerSetting);
             Games[pa] = new GameState_1.default(clients, Games, guild1, ch, pa, SrvLangTxt, SrvRuleSet, ServerSetting);
             Games[pa].updateRoomsRW();
             ch.Living.send("<@!" + message.author.id + "> done!");

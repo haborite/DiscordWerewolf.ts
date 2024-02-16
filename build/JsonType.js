@@ -124,6 +124,7 @@ exports.LangTypeFormat = (0, ts_json_validator_1.obj)({
     sys: (0, ts_json_validator_1.obj)({
         cmd_make_room: (0, ts_json_validator_1.arr)(ts_json_validator_1.str),
         cmd_delete_room: (0, ts_json_validator_1.arr)(ts_json_validator_1.str),
+        cmd_cancel: (0, ts_json_validator_1.arr)(ts_json_validator_1.str),
         cmd_list_GM: (0, ts_json_validator_1.arr)(ts_json_validator_1.str),
         cmd_list_Dev: (0, ts_json_validator_1.arr)(ts_json_validator_1.str),
         cmd_add_GM: (0, ts_json_validator_1.arr)(ts_json_validator_1.str),
@@ -171,6 +172,10 @@ exports.LangTypeFormat = (0, ts_json_validator_1.obj)({
         Current_role_breakdown_sum: ts_json_validator_1.str,
         Current_join_member_num: ts_json_validator_1.str,
         Current_player_sum: ts_json_validator_1.str,
+        scheduled_start: ts_json_validator_1.str,
+        wish_start_datetime_desc: ts_json_validator_1.str,
+        role_assign_datetime_desc: ts_json_validator_1.str,
+        daytime_start_datetime_desc: ts_json_validator_1.str,
         time_formatMS: ts_json_validator_1.str,
         time_formatM: ts_json_validator_1.str,
         time_formatS: ts_json_validator_1.str,

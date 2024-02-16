@@ -11,6 +11,7 @@
     sys : {
         cmd_make_room     : ["make_room"],
         cmd_delete_room   : ["delete_room"],
+        cmd_cancel        : ["^cancel", "中止"],
         cmd_list_GM       : ["^listGM", "^listgm"],
         cmd_list_Dev      : ["^listDev", "^listdev"],
         cmd_add_GM        : ["^addGM"],
@@ -71,6 +72,11 @@
         Current_join_member_num      : "現在の参加者：{num} 人 / 募集：{max} 人",
         Current_player_sum           : "　(うちプレイヤー {num} 人)",
 
+        scheduled_start             : "開始時間がスケジュールされました.",
+        wish_start_datetime_desc    : "役職希望受付開始 : {datetime}",
+        role_assign_datetime_desc   : "役職配布開始 : {datetime}",
+        daytime_start_datetime_desc : "初日議論開始 : {datetime}",
+
         time_formatMS  : "{min}分{sec}秒",
         time_formatM   : "{min}分",
         time_formatS   : "{sec}秒",
@@ -95,7 +101,7 @@
             yes : "有😨",
         },
         first_sight : {
-            txt          : "初夜の占い先　　",
+            txt          : "最初の夜の占い先　　",
             no_sight   : "占い無し",
             random       : "完全ランダム",
             random_white : "ランダム白",
@@ -267,7 +273,7 @@
         warn_join_admin   : "{user_m} さんは Discord サーバーの 管理者権限を持っています．すべてのチャンネルを閲覧できてしまうので注意してください．",
 
         current_count     : "現在 {num}/{all} 人です．",
-        member_full       : "メンバーが全員そろいました！　「{cmd}」でゲームを開始できます．",
+        member_full       : "メンバーが全員そろいました！　「{cmd}」でゲームを開始できます．\n開始時刻をスケジュールするには「{cmd} 2024/03/16 12:00:00」のように指定してください.",
         member_not_enough : "メンバーが足りません．現在 {num} 人です．あと {rem} 人必要です．",
         member_over       : "メンバーが定員オーバーです．現在 {num} 人です． {over} 人多いです．",
     },
@@ -299,11 +305,11 @@
         wish_role_req          : "現在の希望度：",
     },
     p3 : {
-        phase_name           : "初夜",
-        no_sight           : "初夜の占いはありません．",
-        random_sight       : "占いの結果です．初夜の占いはランダムに決定します．人狼が出る可能性もあります．",
-        random_white_sight : "占いの結果です．初夜の占いは人狼以外からランダムに決定します．",
-        length_of_the_first_night : "初夜の時間は {time} です（{date} {hhmmss}まで）",
+        phase_name           : "最初の夜",
+        no_sight           : "最初の夜の占いはありません．",
+        random_sight       : "占いの結果です．最初の夜の占いはランダムに決定します．人狼が出る可能性もあります．",
+        random_white_sight : "占いの結果です．最初の夜の占いは人狼以外からランダムに決定します．",
+        length_of_the_first_night : "最初の夜の時間は {time} です（{date} {hhmmss}まで）",
     },
 
     p4 : {
