@@ -80,8 +80,6 @@ function SightResult(r : Role){
     }
 }
 
-const my_sleep = (msec: number) => new Promise(resolve => setTimeout(resolve, msec));
-
 function current_unix_time(): number {
     return Math.round(Date.now() / 1000)
 }
@@ -298,6 +296,7 @@ export default class GameState {
     dictatorVoteMode: string = "";
     timerList       : NodeJS.Timeout[];
     magicnumber     : number;
+    target_time     : number;
 
     // Game construction method
     constructor(
@@ -335,6 +334,7 @@ export default class GameState {
         this.wolfLog       = [];
         this.timerList   = [];
         this.magicnumber = 0;
+        this.target_time = 0;
         this.reset()
         this.setRoles2(this.ruleSetting)
         this.phase       = Phase.p0_UnStarted;
@@ -1269,7 +1269,7 @@ export default class GameState {
             return;            
         }
 
-        // gameTimer(this.gameId, this, Phase.p2_Preparation, [], dummy_gamePreparation);
+        // gTimer(this.gameId, this, Phase.p2_Preparation, [], dummy_gamePreparation);
         const scheduled_datetime_str = message.content.substring(this.langTxt.p1.cmd_start[idx].length).trim();
         console.log(scheduled_datetime_str);
         let scheduled_unixtime = 0;
@@ -1313,37 +1313,43 @@ export default class GameState {
             return
         }
         console.log(scheduled_unixtime);
-        let waiting = true;
-        let go_next = false;
+        // let waiting = true;
+        let go_flag = 0;
         const current_mn = 0 + this.magicnumber;
-        while (waiting) {
+        const timer1 = setInterval(() => {
             const now = current_unix_time();
             if (now >= scheduled_unixtime) {
-                waiting = false;
-                go_next = true;
+                // waiting = false;
+                go_flag = 1;
             }
             if (current_mn != this.magicnumber) {
-                waiting = false;
-                go_next = false;
+                // waiting = false;
+                go_flag = 2;
             }
             console.log(now);
-            await my_sleep(1000);
-        }
-        if (go_next) {
-            await this.gamePreparation(message);
-        } else {
-            this.channels.Living.send({embeds: [{
-                title       : "cancel",
-                description : "開始がキャンセルされました",
-                color       : this.langTxt.sys.system_color,
-            }]});
-        }
+            if (go_flag === 1) {
+                clearTimeout(timer1);
+                this.gamePreparation(message);
+            } else if (go_flag === 2) {
+                clearTimeout(timer1);
+                this.channels.Living.send({embeds: [{
+                    title       : "cancel",
+                    description : "開始がキャンセルされました",
+                    color       : this.langTxt.sys.system_color,
+                }]});
+            }
+        }, 1000);
+        /*
+        while (waiting) {setTimeout(() => {}, 1000);}
+        */
+
     }
 
     // Reset the game and start recruiting players again
     async nextGame() {
         this.reset();
         await this.start_1Wanted();
+        // this.start_1Wanted();
         this.sendMemberList(this.channels.Living);
         const current_num = Object.keys(this.members).length;
         let send_text = format(this.langTxt.p1.current_count, {num : current_num, all : this.reqMemberNum});
@@ -1422,10 +1428,14 @@ export default class GameState {
                 }
             }
             this.remTime = this.ruleSetting.wish_role_time;
-            console.log(`remTime: ${this.remTime}`);
-            console.log(`this: ${this}`);
-            console.log(`phase: ${this.phase}`);
-            gameTimer(this.gameId, this, Phase.p2_Preparation, [], dummy_gamePreparation2);
+            this.target_time = current_unix_time() + this.ruleSetting.wish_role_time;
+            // console.log(`remTime: ${this.remTime}`);
+            // console.log(`this: ${this}`);
+            // console.log(`phase: ${this.phase}`);
+            // gameTimer(this.gameId, this, Phase.p2_Preparation, [], dummy_gamePreparation2);
+            // this.gameTimer2(this.ruleSetting.wish_role_time, [], this.gamePreparation2, []);
+            //this.gamePreparation2();
+            gameTimer3(this.gameId, this, [], dummy_gamePreparation2);
         }
     }
 
@@ -1901,7 +1911,16 @@ export default class GameState {
         }]});
         // this.httpGameState.updatePhase(this.langTxt.p3.phase_name);
         this.stopTimerRequest = false;
-        gameTimer(this.gameId, this, Phase.p3_FirstNight, this.ruleSetting.first_night.alert_times, dummy_startP4Daytime);
+        // gameTimer(this.gameId, this, Phase.p3_FirstNight, this.ruleSetting.first_night.alert_times, dummy_startP4Daytime);
+        // this.gameTimer2(this.ruleSetting.first_night.first_night_time, this.ruleSetting.first_night.alert_times, this.startP4_Daytime, []);
+        // this.startP4_Daytime();
+        this.target_time = current_unix_time() + this.ruleSetting.first_night.first_night_time;
+        gameTimer3(
+            this.gameId,
+            this,
+            this.ruleSetting.first_night.alert_times,
+            dummy_startP4Daytime
+        );
     }
 
     // Phase.p4_Daytime
@@ -2025,8 +2044,11 @@ export default class GameState {
             this.interactControllers[InteractType.CutTime][sent_message.id] = sent_message;
         }
         
-        gameTimer(this.gameId, this, Phase.p4_Daytime, this.ruleSetting.day.alert_times, dummy_startP5Vote);
-
+        // gameTimer(this.gameId, this, Phase.p4_Daytime, this.ruleSetting.day.alert_times, dummy_startP5Vote);
+        // this.gameTimer2(this.ruleSetting.day.length , this.ruleSetting.day.alert_times, this.startP5_Vote, []);
+        // this.startP5_Vote();
+        this.target_time = current_unix_time() + this.ruleSetting.day.length;
+        gameTimer3(this.gameId, this, this.ruleSetting.day.alert_times, dummy_startP5Vote);
     }
 
     async makeDictatorController(){
@@ -2136,7 +2158,11 @@ export default class GameState {
         }
         this.remTime = this.ruleSetting.vote.length;
         this.stopTimerRequest = false;
-        gameTimer(this.gameId, this, Phase.p5_Vote, this.ruleSetting.vote.alert_times, dummy_voteTimeup);
+        // gameTimer(this.gameId, this, Phase.p5_Vote, this.ruleSetting.vote.alert_times, dummy_voteTimeup);
+        // this.gameTimer2(this.ruleSetting.vote.length, this.ruleSetting.vote.alert_times, this.voteTimeup, []);
+        // this.voteTimeup();
+        this.target_time = current_unix_time() + this.ruleSetting.vote.length;
+        gameTimer3(this.gameId, this, this.ruleSetting.vote.alert_times, dummy_voteTimeup);
     }
     
     async voteTimeup(){
@@ -2460,7 +2486,11 @@ export default class GameState {
         }
         
         this.stopTimerRequest = false;
-        gameTimer(this.gameId, this, Phase.p6_Night, this.ruleSetting.night.alert_times, dummy_nightFinish);
+        // gameTimer(this.gameId, this, Phase.p6_Night, this.ruleSetting.night.alert_times, dummy_nightFinish);
+        // this.gameTimer2(this.ruleSetting.night.length, this.ruleSetting.night.alert_times, this.nightFinish, []);
+        // this.nightFinish();
+        this.target_time = current_unix_time() + this.ruleSetting.night.length;
+        gameTimer3(this.gameId, this, this.ruleSetting.night.alert_times, dummy_nightFinish);
     }
 
     nightKnightCheck(interaction : Discord.ButtonInteraction) {
@@ -2529,7 +2559,10 @@ export default class GameState {
         }
     }
 
-    cutTimeCheck(interaction : Discord.ButtonInteraction) {
+    cutTimeCheck(
+        interaction : Discord.ButtonInteraction,
+        cut_time_desc : string,
+    ) {
         const uid = interaction.user.id;
         const uch = this.members[uid].uchannel;
         if(uch == null) return this.err();
@@ -2541,7 +2574,7 @@ export default class GameState {
         if (!isAdd) {
             delete this.cutTimeMember[uid];
             const now = Object.keys(this.cutTimeMember).length;
-            const txt = format(this.langTxt.p4.cut_time_cancel, {now : now, req : req});
+            const txt = format(cut_time_desc, {now : now, req : req});
             interaction.reply(txt);
             this.channels.Living.send(txt);
         } else {
@@ -2551,9 +2584,11 @@ export default class GameState {
             interaction.reply(txt);
             this.channels.Living.send(txt);
             if (now >= req) {
-                const updated_remTime = Math.min(12, this.remTime)
+                const updated_remTime = Math.min(12, this.remTime);
+                const updated_target_time = Math.min(current_unix_time() + 12, this.target_time);
                 this.channels.Living.send(format(this.langTxt.p4.cut_time_approved, {cut_time: updated_remTime}));
                 this.remTime = updated_remTime;
+                this.target_time = updated_target_time;
             }
         }
     }
@@ -2597,22 +2632,17 @@ export default class GameState {
 
     // Phase.p7_GameEnd
     gameEnd(winTeam : TeamNames){
+
         this.phase = Phase.p7_GameEnd;
-        
-        let dlist : [string, string][] = [];
-        for(const uid in this.members){
-            if(!this.members[uid].isLiving){
-                // dlist.push([uid, this.channels.LivingVoice.id]);
-            }
-        }
         this.updateRoomsRW();
+
         let list : [boolean, number, string][] = []; // win, liveDay, username
 
         let fieldsSeer   : Discord.EmbedField[] = [];
         let fieldsPriest : Discord.EmbedField[] = [];
         let fieldsKnight : Discord.EmbedField[] = [];
         let wolfNames = "";
-        for(const uid in this.members){
+        for (const uid in this.members) {
             const role = this.members[uid].role;
             if(role == null) return this.err();
             const team = getDefaultTeams(role);
@@ -2680,9 +2710,9 @@ export default class GameState {
                 name : format(this.langTxt.p7.log, {emo : this.langTxt.emo.Werewolf, role : this.langTxt.role.Werewolf, name : wolfNames})
             });
         }
-        for(const i in fieldsKnight) {fields.push(fieldsKnight[i]);}
-        for(const i in fieldsSeer)   {fields.push(fieldsSeer[i]);}
-        for(const i in fieldsPriest) {fields.push(fieldsPriest[i]);}
+        for (const i in fieldsKnight) {fields.push(fieldsKnight[i]);}
+        for (const i in fieldsSeer)   {fields.push(fieldsSeer[i]);}
+        for (const i in fieldsPriest) {fields.push(fieldsPriest[i]);}
 
         list = list.sort();
         let desc = this.langTxt.p7.win + "\n";
@@ -2707,7 +2737,7 @@ export default class GameState {
         this.channels.GameLog.send({embeds: [embed]});
 
         let MentionText = "";
-        for(const mid in this.members){
+        for (const mid in this.members) {
             MentionText += getUserMentionStrFromId(mid) + " ";
         }
 
@@ -2715,9 +2745,13 @@ export default class GameState {
         MentionText += "\n" + format(this.langTxt.p7.continue, {time : this.getTimeFormatFromSec(this.remTime), cmd : this.langTxt.p7.cmd_continue[0], brk : this.langTxt.p7.cmd_breakup[0]});
         this.channels.Living.send(MentionText);
         
-        this.remTime = this.ruleSetting.after_game.length;
+        // this.remTime = this.ruleSetting.after_game.length;
         this.stopTimerRequest = false;
-        gameTimer(this.gameId, this, Phase.p7_GameEnd, this.ruleSetting.after_game.alert_times, dummy_gameEndFinish);
+        // gameTimer(this.gameId, this, Phase.p7_GameEnd, this.ruleSetting.after_game.alert_times, dummy_gameEndFinish);
+        // this.gameTimer2(this.ruleSetting.after_game.length, this.ruleSetting.after_game.alert_times, this.gameEndFinish, []);
+        // this.gameEndFinish();
+        this.target_time = current_unix_time() + this.ruleSetting.after_game.length;
+        gameTimer3(this.gameId, this, this.ruleSetting.after_game.alert_times, dummy_gameEndFinish);
     }
 
     gameEndFinish() {
@@ -2883,9 +2917,12 @@ export default class GameState {
                 }
             }
             if(i == InteractType.CutTime){
-                if(this.phase == Phase.p4_Daytime) {
-                    if(interaction.channelId != uch.id) return;
-                    await this.cutTimeCheck(interaction);
+                if (this.phase == Phase.p4_Daytime) {
+                    if (interaction.channelId != uch.id) return;
+                    this.cutTimeCheck(interaction, this.langTxt.p4.cut_time_cancel);
+                } else if (this.phase == Phase.p6_Night) {
+                    if (interaction.channelId != uch.id) return;
+                    this.cutTimeCheck(interaction, this.langTxt.p6.cut_time_cancel);
                 }
             }
             if(i == InteractType.Dictator){
@@ -3081,17 +3118,21 @@ export default class GameState {
     }
 
     // Improved game timer of the game.
-    async gameTimer2(
+    gameTimer2(
         length : number,
         alert_times : number[], 
+        func : (...args: any[]) => any,
+        params : any[],
     ) {
+        console.log("start game timer");
 
         let alert_times_map = alert_times.map((atime) => (atime < length) ? true : false);
         let stopped_time = 0;
         let now_unix_time = current_unix_time()
         let scheduled_unixtime = now_unix_time + length;
         let waiting = true;
-        while (waiting) {
+
+        const timer2 = setInterval(() => {
 
             if (this.stopTimerRequest) {
                 console.log("Timer is stopping.");
@@ -3101,7 +3142,8 @@ export default class GameState {
             scheduled_unixtime = scheduled_unixtime + stopped_time;
             stopped_time = 0;
             now_unix_time = current_unix_time();
-            if (now_unix_time >= scheduled_unixtime) {
+            this.remTime = scheduled_unixtime - now_unix_time;
+            if (this.remTime <= 0) {
                 waiting = false;
             }
 
@@ -3110,7 +3152,7 @@ export default class GameState {
                     continue
                 }
                 const atime = alert_times[idx]
-                if (now_unix_time >= scheduled_unixtime - atime) {
+                if (this.remTime <= atime) {
                     const text = format(
                         this.langTxt.sys.remaining_time,
                         {time : this.getTimeFormatFromSec(atime)}
@@ -3138,13 +3180,22 @@ export default class GameState {
                 }
             }
             this.isTimerProgress = true;
+
+            console.log(this.remTime);
             console.log(now_unix_time);
-            await my_sleep(1000);
-        }
-        
-        console.log("timer finished!");
-        this.channels.Living.send(this.langTxt.sys.time_is_up);
-        this.isTimerProgress = false;
+
+            if (waiting === false) {
+                clearTimeout(timer2);
+                console.log("timer finished!");
+                this.channels.Living.send(this.langTxt.sys.time_is_up);
+                func.bind(this, ...params);
+                this.isTimerProgress = false;
+            }
+
+        }, 1000);
+
+        // while (waiting) {setTimeout(() => {}, 1000);}
+
     }
 
 }
@@ -3176,9 +3227,7 @@ function gameTimer(
         return;
     }
     
-    if(alert_times.find(v => v === obj.remTime) != null) {
-        
-        console.log("alert_times.find(v => v === obj.remTime) != null");
+    if (alert_times.find(v => v === obj.remTime) != null) {
         
         const text = format(obj.langTxt.sys.remaining_time, {time : obj.getTimeFormatFromSec(obj.remTime)});
 
@@ -3219,6 +3268,88 @@ function gameTimer(
     }
 }
 
+
+// Game timer of the game. Do not use "this." in the function.
+function gameTimer3(
+    gid : number, 
+    obj : GameState, 
+    alert_times : number[], 
+    func : (gid : number, obj : GameState) => unknown,
+) {
+
+    console.log("start game timer");
+
+    let stopped_time = 0;
+    let alert_times_map = alert_times.map((atime) => (atime < obj.target_time - current_unix_time()) ? true : false);
+    let waiting = true;
+
+    const timer2 = setInterval(() => {
+
+        const now_unix_time = current_unix_time();
+
+        if (obj.stopTimerRequest) {
+            console.log("Timer is stopping.");
+            stopped_time = current_unix_time() - now_unix_time;     
+            return;
+        }
+        obj.target_time = obj.target_time + stopped_time;
+        stopped_time = 0;
+        obj.remTime = obj.target_time - now_unix_time;
+        if (obj.remTime <= 0) {
+            waiting = false;
+        }
+
+        for (const idx in alert_times) {
+            if (!alert_times_map[idx]) {
+                continue
+            }
+            const atime = alert_times[idx]
+            if (obj.remTime <= atime) {
+                const text = format(
+                    obj.langTxt.sys.remaining_time,
+                    {time : obj.getTimeFormatFromSec(atime)}
+                );
+                if (obj.phase == Phase.p3_FirstNight) {
+                    obj.channels.Werewolf.send(text);
+                } else if (obj.phase == Phase.p5_Vote) {
+                    obj.broadcastLivingUserChannel(text);
+                } else if (obj.phase == Phase.p6_Night) {
+                    obj.channels.Werewolf.send(text);
+                    for(const uid in obj.members){
+                        if (!obj.members[uid].isLiving) continue;
+                        const uch = obj.members[uid].uchannel;
+                        if (uch == null) continue;
+                        const role = obj.members[uid].role;
+                        switch (role) {
+                            case Role.Seer:
+                            case Role.Knight:
+                                uch.send(text);
+                        }
+                    }
+                }
+                obj.channels.Living.send(text);
+                alert_times_map[idx] = false;
+            }
+        }
+        obj.isTimerProgress = true;
+
+        console.log(obj.remTime);
+        console.log(now_unix_time);
+
+        if (waiting === false) {
+            clearTimeout(timer2);
+            console.log("timer finished!");
+            obj.channels.Living.send(obj.langTxt.sys.time_is_up);
+            obj.isTimerProgress = false;
+            func(gid, obj);
+        }
+
+    }, 1000);
+
+}
+
+
+
 ////////////////////////////////////////////
 // dummys
 ////////////////////////////////////////////
@@ -3248,16 +3379,16 @@ async function dummy_gamePreparation2(gid : number, obj : GameState) {
 }
 
 async function dummy_startP4Daytime(gid : number, obj : GameState) {
-    if(gid != obj.gameId) return;
+    if (gid != obj.gameId) return;
     await obj.startP4_Daytime();
 }
 
 async function dummy_startP5Vote(gid : number, obj : GameState) {
-    if(gid != obj.gameId) return;
+    if (gid != obj.gameId) return;
     await obj.startP5_Vote();
 }
 async function dummy_voteTimeup(gid : number, obj : GameState) {
-    if(gid != obj.gameId) return;
+    if (gid != obj.gameId) return;
     obj.voteTimeup();
 }
 async function dummy_nightFinish(gid : number, obj : GameState) {

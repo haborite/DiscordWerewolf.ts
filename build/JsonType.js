@@ -385,6 +385,11 @@ exports.LangTypeFormat = (0, ts_json_validator_1.obj)({
     p6: (0, ts_json_validator_1.obj)({
         phase_name: ts_json_validator_1.str,
         start: ts_json_validator_1.str,
+        cut_time_label: ts_json_validator_1.str,
+        cut_time_title: ts_json_validator_1.str,
+        cut_time_accept: ts_json_validator_1.str,
+        cut_time_cancel: ts_json_validator_1.str,
+        cut_time_approved: ts_json_validator_1.str,
     }),
     p7: (0, ts_json_validator_1.obj)({
         cmd_continue: (0, ts_json_validator_1.arr)(ts_json_validator_1.str),
