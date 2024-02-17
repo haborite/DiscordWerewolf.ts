@@ -814,6 +814,8 @@ export default class GameState {
                         addPerm(uid, Perm.RW,       permDead);
                         addPerm(uid, Perm.ReadOnly, permIndividual);
                         addPerm(uid, Perm.ReadOnly, permAudience);
+                        addPerm(uid, Perm.ReadOnly, permWerewolf);
+                        addPerm(uid, Perm.ReadOnly, permMason);
                     }
                     if (this.members[uid].allowWolfRoom) {
                         const enableDaytimeWolfRoom = true;
@@ -859,6 +861,8 @@ export default class GameState {
                         addPerm(uid, Perm.RW,       permDead);
                         addPerm(uid, Perm.ReadOnly, permIndividual);
                         addPerm(uid, Perm.ReadOnly, permAudience);
+                        addPerm(uid, Perm.ReadOnly, permWerewolf);
+                        addPerm(uid, Perm.ReadOnly, permMason);
                     }
                     if (this.members[uid].allowWolfRoom) {
                         if(this.members[uid].isLiving) {
@@ -898,6 +902,8 @@ export default class GameState {
                         addPerm(uid, Perm.RW,       permDead);
                         addPerm(uid, Perm.ReadOnly, permIndividual);
                         addPerm(uid, Perm.ReadOnly, permAudience);
+                        addPerm(uid, Perm.ReadOnly, permWerewolf);
+                        addPerm(uid, Perm.ReadOnly, permMason);
                     }
                     if (this.members[uid].allowWolfRoom){
                         if(this.members[uid].isLiving) {
@@ -3052,80 +3058,78 @@ export default class GameState {
         }
 
     }
+
+    // Improved game timer of the game.
+    async gameTimer2(
+        length : number,
+        alert_times : number[], 
+    ) {
+
+        let alert_times_map = alert_times.map((atime) => (atime < length) ? true : false);
+        let stopped_time = 0;
+        let now_unix_time = current_unix_time()
+        let scheduled_unixtime = now_unix_time + length;
+        let waiting = true;
+        while (waiting) {
+
+            if (this.stopTimerRequest) {
+                console.log("Timer is stopping.");
+                stopped_time = current_unix_time() - now_unix_time;     
+                return;
+            }
+            scheduled_unixtime = scheduled_unixtime + stopped_time;
+            stopped_time = 0;
+            now_unix_time = current_unix_time();
+            if (now_unix_time >= scheduled_unixtime) {
+                waiting = false;
+            }
+
+            for (const idx in alert_times) {
+                if (!alert_times_map[idx]) {
+                    continue
+                }
+                const atime = alert_times[idx]
+                if (now_unix_time >= scheduled_unixtime - atime) {
+                    const text = format(
+                        this.langTxt.sys.remaining_time,
+                        {time : this.getTimeFormatFromSec(atime)}
+                    );
+                    if (this.phase == Phase.p3_FirstNight) {
+                        this.channels.Werewolf.send(text);
+                    } else if (this.phase == Phase.p5_Vote) {
+                        this.broadcastLivingUserChannel(text);
+                    } else if (this.phase == Phase.p6_Night) {
+                        this.channels.Werewolf.send(text);
+                        for(const uid in this.members){
+                            if (!this.members[uid].isLiving) continue;
+                            const uch = this.members[uid].uchannel;
+                            if (uch == null) continue;
+                            const role = this.members[uid].role;
+                            switch (role) {
+                                case Role.Seer:
+                                case Role.Knight:
+                                    uch.send(text);
+                            }
+                        }
+                    }
+                    this.channels.Living.send(text);
+                    alert_times_map[idx] = false;
+                }
+            }
+            this.isTimerProgress = true;
+            console.log(now_unix_time);
+            await my_sleep(1000);
+        }
+        
+        console.log("timer finished!");
+        this.channels.Living.send(this.langTxt.sys.time_is_up);
+        this.isTimerProgress = false;
+    }
+
 }
 
 // Game timer of the game. Do not use "this." in the function.
 function gameTimer(
-    gid : number, 
-    obj : GameState, 
-    tPhase : Phase, 
-    alert_times : number[], 
-    func : (gid : number, obj : GameState) => unknown,
-    callFromTimer : boolean = false
-) {
-    //! no use "this."
-    console.log(obj.remTime);
-
-    if (gid != obj.gameId) {
-        console.log(`gid: ${gid} != obj.gameId: ${obj.gameId}`);
-        return
-    };
-    if (obj.phase != tPhase) {
-        console.log(`obj.phase: ${obj.phase} != tPhase: ${tPhase}`);
-        return
-    };
-    obj.isTimerProgress = true;
-    if (obj.stopTimerRequest) {
-        console.log("Receive external timer stop request.");
-        obj.timerList.push(setTimeout(gameTimer, 1000, gid, obj, tPhase, alert_times, func, true));
-        return;
-    }
-    
-    if(alert_times.find(v => v === obj.remTime) != null) {
-        
-        console.log("alert_times.find(v => v === obj.remTime) != null");
-        
-        const text = format(obj.langTxt.sys.remaining_time, {time : obj.getTimeFormatFromSec(obj.remTime)});
-
-        if(obj.phase == Phase.p3_FirstNight){
-            console.log("obj.phase == Phase.p3_FirstNight");
-            obj.channels.Werewolf.send(text);
-
-        } else if(obj.phase == Phase.p5_Vote) {
-            console.log("obj.phase == Phase.p5_Vote");
-            obj.broadcastLivingUserChannel(text);
-
-        } else if(obj.phase == Phase.p6_Night) {
-            console.log("obj.phase == Phase.p6_Night");
-            obj.channels.Werewolf.send(text);
-            for(const uid in obj.members){
-                if(!obj.members[uid].isLiving) continue;
-                const uch = obj.members[uid].uchannel;
-                if(uch == null) continue;
-                const role = obj.members[uid].role;
-                switch (role) {
-                    case Role.Seer:
-                    case Role.Knight:
-                        uch.send(text);
-                }
-            }
-        }
-        obj.channels.Living.send(text);
-    }
-
-    if (obj.remTime <= 0) {
-        console.log("timer finished!");
-        obj.channels.Living.send(obj.langTxt.sys.time_is_up);
-        obj.isTimerProgress = false;
-        func(gid, obj);
-    } else {
-        obj.remTime -= 1;
-        obj.timerList.push(setTimeout(gameTimer, 1000, gid, obj, tPhase, alert_times, func, true));
-    }
-}
-
-// Improved game timer of the game. Do not use "this." in the function.
-function gameTimer2(
     gid : number, 
     obj : GameState, 
     tPhase : Phase, 
