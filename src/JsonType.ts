@@ -465,6 +465,12 @@ export const LangTypeFormat = obj({
     :obj({
         phase_name    : str,
         start : str,
+
+        cut_time_label          : str,
+        cut_time_title          : str,
+        cut_time_accept         : str,
+        cut_time_cancel         : str,
+        cut_time_approved       : str,
     }),
 
     p7

@@ -2438,6 +2438,27 @@ export default class GameState {
                 }
             }
         }
+        
+        for (let my_id in this.members) {
+            if (!this.members[my_id].isLiving) continue;
+            const uch = this.members[my_id].uchannel;
+            if (uch == null) return this.err();
+            const component = new Discord.ActionRowBuilder<Discord.ButtonBuilder>().addComponents(
+                Util.make_button(
+                    "cut_time", 
+                    this.langTxt.p6.cut_time_label, 
+                    {style : "red"}
+                )
+            );
+            const sent_message = await uch.send(
+                {
+                    content: this.langTxt.sys.cuttime_desc,
+                    components: [component]
+                }
+            );
+            this.interactControllers[InteractType.CutTime][sent_message.id] = sent_message;
+        }
+        
         this.stopTimerRequest = false;
         gameTimer(this.gameId, this, Phase.p6_Night, this.ruleSetting.night.alert_times, dummy_nightFinish);
     }

@@ -378,6 +378,12 @@
     p6 : {
         phase_name        : "{n}日目 夜",
         start : "夜の時間が始まりました．時間は {time} です（{date} {hhmmss}まで）．",
+
+        cut_time_label        : "時間短縮",
+        cut_time_title        : "時間短縮の希望を行うには :o: リアクションをしてください．成立必要人数 : {req}人",
+        cut_time_accept       : "時間短縮の希望を行いました．{now}/{req}人",
+        cut_time_cancel       : "時間短縮の希望をキャンセルしました．{now}/{req}人",
+        cut_time_approved     : "時間短縮が成立しました. 残り{cut_time}秒で現在のフェーズが終了します.",
     },
 
     p7 : {
