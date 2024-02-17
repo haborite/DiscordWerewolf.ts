@@ -3280,7 +3280,9 @@ function gameTimer3(
     console.log("start game timer");
 
     let stopped_time = 0;
-    let alert_times_map = alert_times.map((atime) => (atime < obj.target_time - current_unix_time()) ? true : false);
+    let alert_times_map = alert_times.map(
+        (atime) => (atime < obj.target_time - current_unix_time()) ? true : false
+    );
     let waiting = true;
 
     const timer2 = setInterval(() => {
