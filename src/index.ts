@@ -20,10 +20,7 @@ argv.option([
 ]);
 const arg = argv.run();
 
-
 const ServerSetting = loadAndSetServerSetting('./server_settings/default.json5', arg.options["server_setting"]);
-// console.log("ServerSetting", ServerSetting)
-
 const SysLangTxt = loadAndSetSysLangTxt("./lang/" + ServerSetting.system_lang + ".json5");
 const SysRuleSet = loadAndSetSysRuleSet("./rule_setting_templates/default.json5");
 
@@ -41,11 +38,7 @@ const clients = [
 
 const Games: { [key: string]: GameState; } = {};
 
-
 clients[0].on("ready", () => {console.log("Login! ", clients[0].user ? clients[0].user.username : "");});
-// clients[1].on("ready", () => {console.log("Login! ", clients[1].user ? clients[1].user.username : "");});
-
-// const httpServer : HttpServer = new HttpServer(ServerSetting, SysLangTxt);
 
 function loadAndSetSysLangTxt(path : string, LangTxt ?: LangType){
     const data = fs.readFileSync(path, 'utf-8');
@@ -236,7 +229,7 @@ async function on_message(bid : number, message : Discord.Message){
     
     const message_channel = message.channel;
 
-    if(SysLangTxt != null && SysRuleSet != null && ('parentId' in message_channel)){
+    if (SysLangTxt != null && SysRuleSet != null && ('parentId' in message_channel)) {
         const SrvLangTxt : LangType = SysLangTxt;
         const SrvRuleSet : RuleType = SysRuleSet;
         const paID = message_channel.parentId;

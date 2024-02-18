@@ -23,10 +23,11 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.KickReason = exports.Phase = void 0;
+exports.KickReason = exports.Role = exports.Phase = void 0;
 const Discord = __importStar(require("discord.js"));
 const GameUtils_1 = require("./GameUtils");
 const Util = __importStar(require("./GameUtils"));
+const Timer = __importStar(require("./GameTimer"));
 const JsonType_1 = require("./JsonType");
 exports.Phase = {
     p0_UnStarted: '0.UnStarted',
@@ -38,7 +39,7 @@ exports.Phase = {
     p6_Night: '6.Night',
     p7_GameEnd: '7.GameEnd',
 };
-const Role = stringToEnum([
+exports.Role = stringToEnum([
     'Villager',
     'Seer',
     'Priest',
@@ -59,18 +60,18 @@ const TeamNames = stringToEnum([
 const WISHROLENUM = 3;
 function getDefaultTeams(r) {
     switch (r) {
-        case Role.Villager:
-        case Role.Seer:
-        case Role.Priest:
-        case Role.Knight:
-        case Role.Mason:
-        case Role.Dictator:
-        case Role.Baker:
+        case exports.Role.Villager:
+        case exports.Role.Seer:
+        case exports.Role.Priest:
+        case exports.Role.Knight:
+        case exports.Role.Mason:
+        case exports.Role.Dictator:
+        case exports.Role.Baker:
             return TeamNames.Good;
-        case Role.Werewolf:
-        case Role.Traitor:
-        case Role.Communicatable:
-        case Role.Fanatic:
+        case exports.Role.Werewolf:
+        case exports.Role.Traitor:
+        case exports.Role.Communicatable:
+        case exports.Role.Fanatic:
             return TeamNames.Evil;
         default:
             (0, GameUtils_1.assertUnreachable)(r);
@@ -78,25 +79,22 @@ function getDefaultTeams(r) {
 }
 function SightResult(r) {
     switch (r) {
-        case Role.Villager:
-        case Role.Seer:
-        case Role.Priest:
-        case Role.Knight:
-        case Role.Mason:
-        case Role.Dictator:
-        case Role.Baker:
-        case Role.Traitor:
-        case Role.Communicatable:
-        case Role.Fanatic:
+        case exports.Role.Villager:
+        case exports.Role.Seer:
+        case exports.Role.Priest:
+        case exports.Role.Knight:
+        case exports.Role.Mason:
+        case exports.Role.Dictator:
+        case exports.Role.Baker:
+        case exports.Role.Traitor:
+        case exports.Role.Communicatable:
+        case exports.Role.Fanatic:
             return TeamNames.Good;
-        case Role.Werewolf:
+        case exports.Role.Werewolf:
             return TeamNames.Evil;
         default:
             (0, GameUtils_1.assertUnreachable)(r);
     }
-}
-function current_unix_time() {
-    return Math.round(Date.now() / 1000);
 }
 function hhmmss_str(unix_time_str) {
     return "<t:" + unix_time_str + ":T>";
@@ -284,7 +282,6 @@ class GameState {
     reactedMember = Object.create(null);
     cutTimeMember = Object.create(null);
     p2CanForceStartGame;
-    remTime;
     daytimeStartTime = 0;
     stopTimerRequest;
     isTimerProgress;
@@ -301,6 +298,8 @@ class GameState {
     timerList;
     magicnumber;
     target_time;
+    stopped_time;
+    is_skipped;
     // Game construction method
     constructor(clients, upperGames, guild, ch, parentID, srvLangTxt, srvRuleSetting, srvSetting) {
         this.clients = clients;
@@ -314,7 +313,6 @@ class GameState {
         this.parentID = parentID;
         this.gameId = -1;
         this.p2CanForceStartGame = false;
-        this.remTime = -1;
         this.stopTimerRequest = false;
         this.isTimerProgress = false;
         this.dayNumber = -1;
@@ -329,6 +327,8 @@ class GameState {
         this.timerList = [];
         this.magicnumber = 0;
         this.target_time = 0;
+        this.stopped_time = 0;
+        this.is_skipped = false;
         this.reset();
         this.setRoles2(this.ruleSetting);
         this.phase = exports.Phase.p0_UnStarted;
@@ -356,7 +356,6 @@ class GameState {
         this.gameId = Math.floor(Math.random() * 0x40000000);
         this.interactControllers = [];
         this.p2CanForceStartGame = false;
-        this.remTime = -1;
         this.stopTimerRequest = false;
         this.isTimerProgress = false;
         this.dayNumber = -1;
@@ -582,10 +581,10 @@ class GameState {
         }
         let rules_txt = "";
         rules_txt += this.langTxt.rule.first_victim_count.txt + ": " + this.ruleSetting.first_victim_count + "\n";
-        if (this.defaultRoles[Role.Seer]) {
+        if (this.defaultRoles[exports.Role.Seer]) {
             rules_txt += this.langTxt.rule.first_sight.txt + ":" + this.langTxt.rule.first_sight[this.ruleSetting.first_sight] + "\n";
         }
-        if (this.defaultRoles[Role.Knight]) {
+        if (this.defaultRoles[exports.Role.Knight]) {
             rules_txt += this.langTxt.rule.continuous_guard.txt + ":" + this.langTxt.rule.continuous_guard[this.ruleSetting.continuous_guard ? "yes" : "no"] + "\n";
         }
         {
@@ -680,6 +679,29 @@ class GameState {
             this.sendRuleSummary(this.channels.Living);
         }
         console.log(this.ruleSetting);
+    }
+    // Shift phase
+    next_phase() {
+        switch (this.phase) {
+            case exports.Phase.p2_Preparation:
+                this.gamePreparation2();
+                break;
+            case exports.Phase.p3_FirstNight:
+                this.startP4_Daytime();
+                break;
+            case exports.Phase.p4_Daytime:
+                this.startP5_Vote();
+                break;
+            case exports.Phase.p5_Vote:
+                this.voteTimeup();
+                break;
+            case exports.Phase.p6_Night:
+                this.nightFinish();
+                break;
+            case exports.Phase.p7_GameEnd:
+                this.gameEndFinish();
+                break;
+        }
     }
     // Phase 0 start
     async start_0Unstarted() {
@@ -1050,7 +1072,7 @@ class GameState {
             const r = this.members[id].role;
             if (r == null)
                 return this.err();
-            if (r == Role.Werewolf) {
+            if (r == exports.Role.Werewolf) {
                 wolfNum += 1;
             }
             else {
@@ -1091,7 +1113,7 @@ class GameState {
         if (this.isTimerProgress) {
             this.stopTimerRequest = true;
             this.channels.Living.send({ embeds: [{
-                        title: (0, GameUtils_1.format)(this.langTxt.sys.stop_timer, { time: this.getTimeFormatFromSec(this.remTime), cmd: this.langTxt.sys.cmd_resume_timer[0] }),
+                        title: (0, GameUtils_1.format)(this.langTxt.sys.stop_timer, { time: this.getTimeFormatFromSec(this.target_time - Util.current_unix_time()), cmd: this.langTxt.sys.cmd_resume_timer[0] }),
                         color: this.langTxt.sys.system_color,
                     }] });
         }
@@ -1104,7 +1126,7 @@ class GameState {
         if (this.isTimerProgress) {
             this.stopTimerRequest = false;
             this.channels.Living.send({ embeds: [{
-                        title: (0, GameUtils_1.format)(this.langTxt.sys.restart_timer, { time: this.getTimeFormatFromSec(this.remTime) }),
+                        title: (0, GameUtils_1.format)(this.langTxt.sys.restart_timer, { time: this.getTimeFormatFromSec(this.target_time + this.stopped_time - Util.current_unix_time()) }),
                         color: this.langTxt.sys.system_color,
                     }] });
         }
@@ -1263,7 +1285,6 @@ class GameState {
             this.channels.Living.send((0, GameUtils_1.format)(this.langTxt.p1.member_over, { num: current_num, over: current_num - this.reqMemberNum }));
             return;
         }
-        // gTimer(this.gameId, this, Phase.p2_Preparation, [], dummy_gamePreparation);
         const scheduled_datetime_str = message.content.substring(this.langTxt.p1.cmd_start[idx].length).trim();
         console.log(scheduled_datetime_str);
         let scheduled_unixtime = 0;
@@ -1293,22 +1314,18 @@ class GameState {
                     description: schedule_desc,
                     color: this.langTxt.sys.system_color,
                 }] });
-        // const target_unix_time = current_unix_time() + 60;
         if (scheduled_unixtime === 0) {
             return;
         }
         console.log(scheduled_unixtime);
-        // let waiting = true;
         let go_flag = 0;
         const current_mn = 0 + this.magicnumber;
         const timer1 = setInterval(() => {
-            const now = current_unix_time();
+            const now = Util.current_unix_time();
             if (now >= scheduled_unixtime) {
-                // waiting = false;
                 go_flag = 1;
             }
             if (current_mn != this.magicnumber) {
-                // waiting = false;
                 go_flag = 2;
             }
             console.log(now);
@@ -1325,9 +1342,6 @@ class GameState {
                         }] });
             }
         }, 1000);
-        /*
-        while (waiting) {setTimeout(() => {}, 1000);}
-        */
     }
     // Reset the game and start recruiting players again
     async nextGame() {
@@ -1359,11 +1373,9 @@ class GameState {
         await this.searchUserChannel(message);
         this.updateRoomsRW();
         if (this.ruleSetting.wish_role_time <= 0) {
-            console.log("this.ruleSetting.wish_role_time <= 0");
             await this.gamePreparation2();
         }
         else {
-            console.log("this.ruleSetting.wish_role_time > 0");
             // Initialize interactControllers of wishRole
             this.interactControllers[InteractType.WishRole] = Object.create(null);
             // Send a message about wishRole at living ch
@@ -1410,15 +1422,8 @@ class GameState {
                     this.interactControllers[InteractType.WishRole][sent_message.id] = sent_message;
                 }
             }
-            this.remTime = this.ruleSetting.wish_role_time;
-            this.target_time = current_unix_time() + this.ruleSetting.wish_role_time;
-            // console.log(`remTime: ${this.remTime}`);
-            // console.log(`this: ${this}`);
-            // console.log(`phase: ${this.phase}`);
-            // gameTimer(this.gameId, this, Phase.p2_Preparation, [], dummy_gamePreparation2);
-            // this.gameTimer2(this.ruleSetting.wish_role_time, [], this.gamePreparation2, []);
-            //this.gamePreparation2();
-            gameTimer3(this.gameId, this, [], dummy_gamePreparation2);
+            this.target_time = Util.current_unix_time() + this.ruleSetting.wish_role_time;
+            Timer.gameTimer3(this, []);
         }
     }
     // Create role wish buttons
@@ -1517,7 +1522,6 @@ class GameState {
     }
     // Remove first victims, assign roles, prepare common rooms, send messages, start the first night
     async gamePreparation2() {
-        console.log("gamePreparation2");
         const enable_confirmation = ((this.ruleSetting.wish_role_time <= 0) && (this.ruleSetting.confirmation_sec > 0));
         // Remove first victims
         let possible_victims_as_roles = [];
@@ -1542,12 +1546,10 @@ class GameState {
                 this.playingRoles[r] = 1;
             }
         }
-        console.log("this.playingRoles:");
         console.log(this.playingRoles);
         // Assign roles
         let role_arr = [];
         if (this.ruleSetting.wish_role_time <= 0) {
-            console.log("this.ruleSetting.wish_role_time <= 0");
             for (const r in this.playingRoles) {
                 for (let i = 0; i < this.playingRoles[r]; ++i) {
                     role_arr.push(r);
@@ -1556,22 +1558,15 @@ class GameState {
             role_arr = (0, GameUtils_1.shuffle)(role_arr);
         }
         else {
-            console.log("this.ruleSetting.wish_role_time > 0");
             let roles = [];
             for (const r in this.playingRoles) {
                 for (let i = 0; i < this.playingRoles[r]; ++i) {
                     roles.push(r);
                 }
             }
-            console.log("roles before shuffle:");
-            console.log(roles);
             roles = (0, GameUtils_1.shuffle)(roles);
-            console.log("roles after shuffle:");
-            console.log(roles);
             this.interactControllers[InteractType.WishRole] = Object.create(null);
             const members = (0, GameUtils_1.shuffle)(Object.keys(this.members));
-            console.log("members:");
-            console.log(members);
             const scale = 100000;
             let mat = new Array(members.length);
             for (let i = 0; i < members.length; ++i) {
@@ -1603,8 +1598,8 @@ class GameState {
         Object.keys(this.members).forEach((uid, i) => {
             const r = role_arr[i];
             this.members[uid].role = r;
-            const allowWolfRoom = (r == Role.Werewolf || r == Role.Communicatable);
-            const allowMasonRoom = (r == Role.Mason);
+            const allowWolfRoom = (r == exports.Role.Werewolf || r == exports.Role.Communicatable);
+            const allowMasonRoom = (r == exports.Role.Mason);
             this.members[uid].alpStr = this.langTxt.react.alp[i];
             this.members[uid].allowWolfRoom = allowWolfRoom;
             this.members[uid].allowMasonRoom = allowMasonRoom;
@@ -1626,7 +1621,7 @@ class GameState {
             const r = this.members[id].role;
             if (r == null)
                 return this.err();
-            if (r == Role.Werewolf) {
+            if (r == exports.Role.Werewolf) {
                 wolfNum += 1;
             }
             else {
@@ -1643,7 +1638,7 @@ class GameState {
         }
         this.resetReactedMember();
         this.p2CanForceStartGame = false;
-        const werewolf_role_str = Role.Werewolf;
+        const werewolf_role_str = exports.Role.Werewolf;
         const werewolf_team = getDefaultTeams(werewolf_role_str);
         const werewolf_embed = new Discord.EmbedBuilder({
             title: (0, GameUtils_1.format)(this.langTxt.werewolf.start_room_title, { names: WerewolfNames }),
@@ -1655,7 +1650,7 @@ class GameState {
         { // for Werewolf
             this.channels.Werewolf.send({ embeds: [werewolf_embed] });
         }
-        const mason_role_str = Role.Mason;
+        const mason_role_str = exports.Role.Mason;
         const mason_team = getDefaultTeams(werewolf_role_str);
         const mason_embed = new Discord.EmbedBuilder({
             title: (0, GameUtils_1.format)(this.langTxt.mason.start_room_title, { names: MasonNames }),
@@ -1681,7 +1676,7 @@ class GameState {
             if (this.members[uid].allowWolfRoom) {
                 fields.push(WerewolfRoomField);
             }
-            if (this.members[uid].role == Role.Mason) {
+            if (this.members[uid].role == exports.Role.Mason) {
                 fields.push(MasonRoomField);
             }
             const embed = new Discord.EmbedBuilder({
@@ -1693,7 +1688,7 @@ class GameState {
                 author: { name: this.members[uid].nickname, iconURL: this.members[uid].user.displayAvatarURL() },
             });
             uch.send({ embeds: [embed] });
-            if (this.members[uid].role == Role.Fanatic) {
+            if (this.members[uid].role == exports.Role.Fanatic) {
                 uch.send({ embeds: [werewolf_embed] });
             }
             if (enable_confirmation) {
@@ -1824,14 +1819,13 @@ class GameState {
     // Phase.p3_FirstNight
     startFirstNight() {
         this.phase = exports.Phase.p3_FirstNight;
-        this.remTime = this.ruleSetting.first_night.first_night_time;
         this.updateRoomsRW();
         this.interactControllers[InteractType.Accept] = Object.create(null);
         for (let my_id in this.members) {
             const uch = this.members[my_id].uchannel;
             if (uch == null)
                 return this.err();
-            if (this.members[my_id].role == Role.Seer) {
+            if (this.members[my_id].role == exports.Role.Seer) {
                 if (this.ruleSetting.first_sight === 'no_sight') {
                     uch.send(getUserMentionStrFromId(my_id) + this.langTxt.p3.no_sight);
                 }
@@ -1873,21 +1867,18 @@ class GameState {
         for (let step = 0; step < this.ruleSetting.first_victim_count; step++) {
             this.killNext.push(["0", 0]);
         }
+        const first_night_time = this.ruleSetting.first_night.first_night_time;
+        this.target_time = first_night_time + Util.current_unix_time();
         this.channels.Living.send({ embeds: [{
                     title: (0, GameUtils_1.format)(this.langTxt.p3.length_of_the_first_night, {
-                        time: this.getTimeFormatFromSec(this.remTime),
-                        date: date_str(current_unix_time() + this.remTime),
-                        hhmmss: hhmmss_str(current_unix_time() + this.remTime),
+                        time: this.getTimeFormatFromSec(first_night_time),
+                        date: date_str(this.target_time),
+                        hhmmss: hhmmss_str(this.target_time),
                     }),
                     color: this.langTxt.sys.system_color,
                 }] });
-        // this.httpGameState.updatePhase(this.langTxt.p3.phase_name);
         this.stopTimerRequest = false;
-        // gameTimer(this.gameId, this, Phase.p3_FirstNight, this.ruleSetting.first_night.alert_times, dummy_startP4Daytime);
-        // this.gameTimer2(this.ruleSetting.first_night.first_night_time, this.ruleSetting.first_night.alert_times, this.startP4_Daytime, []);
-        // this.startP4_Daytime();
-        this.target_time = current_unix_time() + this.ruleSetting.first_night.first_night_time;
-        gameTimer3(this.gameId, this, this.ruleSetting.first_night.alert_times, dummy_startP4Daytime);
+        Timer.gameTimer3(this, this.ruleSetting.first_night.alert_times);
     }
     // Phase.p4_Daytime
     async startP4_Daytime() {
@@ -1951,8 +1942,8 @@ class GameState {
             this.channels.GameLog.send({ embeds: [embed] });
         }
         this.killNext = [];
-        if (this.defaultRoles[Role.Baker] > 0) {
-            if (Object.keys(this.members).some(uid => this.members[uid].isLiving && this.members[uid].role == Role.Baker)) {
+        if (this.defaultRoles[exports.Role.Baker] > 0) {
+            if (Object.keys(this.members).some(uid => this.members[uid].isLiving && this.members[uid].role == exports.Role.Baker)) {
                 const bread = this.langTxt.baker.repertoire[Math.floor(Math.random() * this.langTxt.baker.repertoire.length)];
                 const embed = new Discord.EmbedBuilder({
                     author: { name: this.langTxt.role.Baker, iconURL: this.langTxt.role_img.Baker },
@@ -1961,7 +1952,7 @@ class GameState {
                 });
                 this.channels.Living.send({ embeds: [embed] });
             }
-            else if (Object.keys(this.members).some(uid => this.members[uid].livingDays == this.dayNumber - 1 && this.members[uid].role == Role.Baker)) {
+            else if (Object.keys(this.members).some(uid => this.members[uid].livingDays == this.dayNumber - 1 && this.members[uid].role == exports.Role.Baker)) {
                 const embed = new Discord.EmbedBuilder({
                     author: { name: this.langTxt.role.Baker, iconURL: this.langTxt.role_img.Baker },
                     title: this.langTxt.baker.killed,
@@ -1970,12 +1961,14 @@ class GameState {
                 this.channels.Living.send({ embeds: [embed] });
             }
         }
-        this.remTime = Math.max(0, this.ruleSetting.day.length - this.ruleSetting.day.reduction_time * (this.dayNumber - 1));
+        const daytime_length = Math.max(0, this.ruleSetting.day.length - this.ruleSetting.day.reduction_time * (this.dayNumber - 1));
+        const now_unix_time = Util.current_unix_time();
+        this.target_time = now_unix_time + daytime_length;
         this.channels.Living.send({ embeds: [{
                     title: (0, GameUtils_1.format)(this.langTxt.p4.length_of_the_day, {
-                        time: this.getTimeFormatFromSec(this.remTime),
-                        date: date_str(current_unix_time() + this.remTime),
-                        hhmmss: hhmmss_str(current_unix_time() + this.remTime),
+                        time: this.getTimeFormatFromSec(daytime_length),
+                        date: date_str(this.target_time),
+                        hhmmss: hhmmss_str(this.target_time),
                     }),
                     color: this.langTxt.sys.system_color,
                 }] });
@@ -1997,21 +1990,17 @@ class GameState {
             });
             this.interactControllers[InteractType.CutTime][sent_message.id] = sent_message;
         }
-        // gameTimer(this.gameId, this, Phase.p4_Daytime, this.ruleSetting.day.alert_times, dummy_startP5Vote);
-        // this.gameTimer2(this.ruleSetting.day.length , this.ruleSetting.day.alert_times, this.startP5_Vote, []);
-        // this.startP5_Vote();
-        this.target_time = current_unix_time() + this.ruleSetting.day.length;
-        gameTimer3(this.gameId, this, this.ruleSetting.day.alert_times, dummy_startP5Vote);
+        Timer.gameTimer3(this, this.ruleSetting.day.alert_times);
     }
     async makeDictatorController() {
-        if (this.defaultRoles[Role.Dictator] <= 0)
+        if (this.defaultRoles[exports.Role.Dictator] <= 0)
             return;
         this.interactControllers[InteractType.Dictator] = Object.create(null);
         this.dictatorVoteMode = "";
         for (const uid in this.members) {
             if (!this.members[uid].isLiving)
                 continue;
-            if (this.members[uid].role != Role.Dictator)
+            if (this.members[uid].role != exports.Role.Dictator)
                 continue;
             if (this.members[uid].roleCmdInvokeNum > 0)
                 continue;
@@ -2060,8 +2049,8 @@ class GameState {
             this.channels.Living.send({ embeds: [{
                         title: (0, GameUtils_1.format)(this.langTxt.p5.end_daytime, {
                             time: this.getTimeFormatFromSec(this.ruleSetting.vote.length),
-                            date: date_str(current_unix_time() + this.ruleSetting.vote.length),
-                            hhmmss: hhmmss_str(current_unix_time() + this.ruleSetting.vote.length),
+                            date: date_str(Util.current_unix_time() + this.ruleSetting.vote.length),
+                            hhmmss: hhmmss_str(Util.current_unix_time() + this.ruleSetting.vote.length),
                         }),
                         color: this.langTxt.sys.system_color,
                     }] });
@@ -2106,13 +2095,9 @@ class GameState {
             });
             this.interactControllers[InteractType.Vote][sent_message.id] = sent_message;
         }
-        this.remTime = this.ruleSetting.vote.length;
         this.stopTimerRequest = false;
-        // gameTimer(this.gameId, this, Phase.p5_Vote, this.ruleSetting.vote.alert_times, dummy_voteTimeup);
-        // this.gameTimer2(this.ruleSetting.vote.length, this.ruleSetting.vote.alert_times, this.voteTimeup, []);
-        // this.voteTimeup();
-        this.target_time = current_unix_time() + this.ruleSetting.vote.length;
-        gameTimer3(this.gameId, this, this.ruleSetting.vote.alert_times, dummy_voteTimeup);
+        this.target_time = Util.current_unix_time() + this.ruleSetting.vote.length;
+        Timer.gameTimer3(this, this.ruleSetting.vote.alert_times);
     }
     async voteTimeup() {
         this.interactControllers[InteractType.Vote] = Object.create(null);
@@ -2289,12 +2274,14 @@ class GameState {
     // Phase.p6_Night
     async startP6_Night() {
         this.phase = exports.Phase.p6_Night;
-        this.remTime = this.ruleSetting.night.length;
+        const night_length = this.ruleSetting.night.length;
+        const now_unix_time = Util.current_unix_time();
+        this.target_time = now_unix_time + night_length;
         this.updateRoomsRW();
         const nightComingMessage = (0, GameUtils_1.format)(this.langTxt.p6.start, {
-            time: this.getTimeFormatFromSec(this.remTime),
-            date: date_str(current_unix_time() + this.remTime),
-            hhmmss: hhmmss_str(current_unix_time() + this.remTime),
+            time: this.getTimeFormatFromSec(night_length),
+            date: date_str(this.target_time),
+            hhmmss: hhmmss_str(this.target_time),
         });
         const nightComingEmbed = { embeds: [new Discord.EmbedBuilder({
                     title: nightComingMessage,
@@ -2310,11 +2297,11 @@ class GameState {
             if (uch == null)
                 return this.err();
             const role = this.members[my_id].role;
-            if (role == Role.Priest) {
+            if (role === exports.Role.Priest) {
                 uch.send(getUserMentionStrFromId(my_id) + nightComingMessage);
                 this.sendFP_Result(my_id, uch, this.lastExecuted, this.langTxt.priest, this.langTxt.role_img.Priest);
             }
-            else if (role == Role.Knight) {
+            else if (role === exports.Role.Knight) {
                 uch.send(getUserMentionStrFromId(my_id) + nightComingMessage);
                 this.interactControllers[InteractType.Knight] = Object.create(null);
                 this.members[my_id].validVoteID = [];
@@ -2344,22 +2331,22 @@ class GameState {
                 });
                 this.interactControllers[InteractType.Knight][sent_message.id] = sent_message;
             }
-            else if (role == Role.Seer) {
+            else if (role === exports.Role.Seer) {
                 uch.send(getUserMentionStrFromId(my_id) + nightComingMessage);
                 this.interactControllers[InteractType.Seer] = Object.create(null);
                 this.members[my_id].validVoteID = [];
                 let buttons = [];
                 for (const tid in this.members) {
-                    if (tid == my_id)
+                    if (tid === my_id)
                         continue;
                     if (!this.members[tid].isLiving)
                         continue;
-                    if (this.members[my_id].actionLog.find(p => p[0] == tid) != null)
+                    if (this.members[my_id].actionLog.find(p => p[0] === tid) != null)
                         continue;
                     this.members[my_id].validVoteID.push(tid);
                     buttons.push(Util.make_button(tid, this.members[tid].nickname, { style: "blue" }));
                 }
-                if (this.members[my_id].validVoteID.length == 0) {
+                if (this.members[my_id].validVoteID.length === 0) {
                     this.sendFP_Result(my_id, uch, null, this.langTxt.seer, this.langTxt.role_img.Seer);
                 }
                 else {
@@ -2390,7 +2377,7 @@ class GameState {
         }
         { // for Werewolf
             this.interactControllers[InteractType.Werewolf] = Object.create(null);
-            const role = Role.Werewolf;
+            const role = exports.Role.Werewolf;
             this.wolfValidTo = [];
             this.wolfValidFrom = [];
             this.wolfVote = "";
@@ -2398,7 +2385,7 @@ class GameState {
             for (const tid in this.members) {
                 if (!this.members[tid].isLiving)
                     continue;
-                if (this.members[tid].role == Role.Werewolf)
+                if (this.members[tid].role == exports.Role.Werewolf)
                     continue;
                 this.wolfValidTo.push(tid);
                 buttons.push(Util.make_button(tid, this.members[tid].nickname, { style: "blue" }));
@@ -2425,7 +2412,7 @@ class GameState {
             for (let my_id in this.members) {
                 if (!this.members[my_id].isLiving)
                     continue;
-                if (this.members[my_id].role == Role.Werewolf) {
+                if (this.members[my_id].role == exports.Role.Werewolf) {
                     this.wolfValidFrom.push(my_id);
                 }
             }
@@ -2444,11 +2431,7 @@ class GameState {
             this.interactControllers[InteractType.CutTime][sent_message.id] = sent_message;
         }
         this.stopTimerRequest = false;
-        // gameTimer(this.gameId, this, Phase.p6_Night, this.ruleSetting.night.alert_times, dummy_nightFinish);
-        // this.gameTimer2(this.ruleSetting.night.length, this.ruleSetting.night.alert_times, this.nightFinish, []);
-        // this.nightFinish();
-        this.target_time = current_unix_time() + this.ruleSetting.night.length;
-        gameTimer3(this.gameId, this, this.ruleSetting.night.alert_times, dummy_nightFinish);
+        Timer.gameTimer3(this, this.ruleSetting.night.alert_times);
     }
     nightKnightCheck(interaction) {
         const tid = Object.keys(this.members).find(mid => mid == interaction.customId);
@@ -2460,7 +2443,7 @@ class GameState {
             return this.err();
         if (this.members[uid].validVoteID.find(i => i == tid)) {
             const change = this.members[uid].voteTo != "";
-            const role = Role.Knight;
+            const role = exports.Role.Knight;
             const author = {
                 name: this.langTxt.role[role],
                 iconURL: this.langTxt.role_img[role]
@@ -2507,7 +2490,7 @@ class GameState {
         const change = this.wolfVote != "";
         const author = {
             name: this.members[interaction.user.id].nickname,
-            iconURL: this.langTxt.role_img[Role.Werewolf]
+            iconURL: this.langTxt.role_img[exports.Role.Werewolf]
         };
         if (this.wolfVote == tid) {
             interaction.reply({ embeds: [this.createVoteEmbed(author, this.langTxt.werewolf.already, tid)] });
@@ -2546,11 +2529,9 @@ class GameState {
             interaction.reply(txt);
             this.channels.Living.send(txt);
             if (now >= req) {
-                const updated_remTime = Math.min(12, this.remTime);
-                const updated_target_time = Math.min(current_unix_time() + 12, this.target_time);
-                this.channels.Living.send((0, GameUtils_1.format)(this.langTxt.p4.cut_time_approved, { cut_time: updated_remTime }));
-                this.remTime = updated_remTime;
-                this.target_time = updated_target_time;
+                this.is_skipped = true;
+                this.target_time = Math.min(Util.current_unix_time() + 10, this.target_time);
+                this.channels.Living.send((0, GameUtils_1.format)(this.langTxt.p4.cut_time_approved, { cut_time: this.target_time - Util.current_unix_time() }));
             }
         }
     }
@@ -2561,7 +2542,7 @@ class GameState {
         this.interactControllers[InteractType.CutTime] = Object.create(null);
         let Guarded = [];
         for (const uid in this.members) {
-            if (this.members[uid].role != Role.Knight)
+            if (this.members[uid].role != exports.Role.Knight)
                 continue;
             if (!this.members[uid].isLiving)
                 continue;
@@ -2617,10 +2598,10 @@ class GameState {
                     name: this.members[uid].nickname
                 })
             ]);
-            if (role == Role.Werewolf) {
+            if (role == exports.Role.Werewolf) {
                 wolfNames += this.members[uid].nickname;
             }
-            if (role == Role.Seer || role == Role.Priest) {
+            if (role == exports.Role.Seer || role == exports.Role.Priest) {
                 let dat = "";
                 for (let i in this.members[uid].actionLog) {
                     let a = this.members[uid].actionLog[i][0];
@@ -2634,7 +2615,7 @@ class GameState {
                 }
                 if (dat == "")
                     dat = this.langTxt.sys.no_result;
-                if (role == Role.Seer) {
+                if (role == exports.Role.Seer) {
                     fieldsSeer.push({ value: dat, inline: true,
                         name: (0, GameUtils_1.format)(this.langTxt.p7.log, { emo: this.langTxt.emo[role], role: this.langTxt.role[role], name: this.members[uid].nickname })
                     });
@@ -2645,7 +2626,7 @@ class GameState {
                     });
                 }
             }
-            if (role == Role.Knight) {
+            if (role == exports.Role.Knight) {
                 let dat = "";
                 for (let i in this.members[uid].actionLog) {
                     let a = this.members[uid].actionLog[i][0];
@@ -2710,16 +2691,15 @@ class GameState {
         for (const mid in this.members) {
             MentionText += getUserMentionStrFromId(mid) + " ";
         }
-        this.remTime = this.ruleSetting.after_game.length;
-        MentionText += "\n" + (0, GameUtils_1.format)(this.langTxt.p7.continue, { time: this.getTimeFormatFromSec(this.remTime), cmd: this.langTxt.p7.cmd_continue[0], brk: this.langTxt.p7.cmd_breakup[0] });
+        this.target_time = Util.current_unix_time() + this.ruleSetting.after_game.length;
+        MentionText += "\n" + (0, GameUtils_1.format)(this.langTxt.p7.continue, {
+            time: this.getTimeFormatFromSec(this.ruleSetting.after_game.length),
+            cmd: this.langTxt.p7.cmd_continue[0],
+            brk: this.langTxt.p7.cmd_breakup[0]
+        });
         this.channels.Living.send(MentionText);
-        // this.remTime = this.ruleSetting.after_game.length;
         this.stopTimerRequest = false;
-        // gameTimer(this.gameId, this, Phase.p7_GameEnd, this.ruleSetting.after_game.alert_times, dummy_gameEndFinish);
-        // this.gameTimer2(this.ruleSetting.after_game.length, this.ruleSetting.after_game.alert_times, this.gameEndFinish, []);
-        // this.gameEndFinish();
-        this.target_time = current_unix_time() + this.ruleSetting.after_game.length;
-        gameTimer3(this.gameId, this, this.ruleSetting.after_game.alert_times, dummy_gameEndFinish);
+        Timer.gameTimer3(this, this.ruleSetting.after_game.alert_times);
     }
     gameEndFinish() {
         this.destroy();
@@ -3067,245 +3047,6 @@ class GameState {
             }
         }
     }
-    // Improved game timer of the game.
-    gameTimer2(length, alert_times, func, params) {
-        console.log("start game timer");
-        let alert_times_map = alert_times.map((atime) => (atime < length) ? true : false);
-        let stopped_time = 0;
-        let now_unix_time = current_unix_time();
-        let scheduled_unixtime = now_unix_time + length;
-        let waiting = true;
-        const timer2 = setInterval(() => {
-            if (this.stopTimerRequest) {
-                console.log("Timer is stopping.");
-                stopped_time = current_unix_time() - now_unix_time;
-                return;
-            }
-            scheduled_unixtime = scheduled_unixtime + stopped_time;
-            stopped_time = 0;
-            now_unix_time = current_unix_time();
-            this.remTime = scheduled_unixtime - now_unix_time;
-            if (this.remTime <= 0) {
-                waiting = false;
-            }
-            for (const idx in alert_times) {
-                if (!alert_times_map[idx]) {
-                    continue;
-                }
-                const atime = alert_times[idx];
-                if (this.remTime <= atime) {
-                    const text = (0, GameUtils_1.format)(this.langTxt.sys.remaining_time, { time: this.getTimeFormatFromSec(atime) });
-                    if (this.phase == exports.Phase.p3_FirstNight) {
-                        this.channels.Werewolf.send(text);
-                    }
-                    else if (this.phase == exports.Phase.p5_Vote) {
-                        this.broadcastLivingUserChannel(text);
-                    }
-                    else if (this.phase == exports.Phase.p6_Night) {
-                        this.channels.Werewolf.send(text);
-                        for (const uid in this.members) {
-                            if (!this.members[uid].isLiving)
-                                continue;
-                            const uch = this.members[uid].uchannel;
-                            if (uch == null)
-                                continue;
-                            const role = this.members[uid].role;
-                            switch (role) {
-                                case Role.Seer:
-                                case Role.Knight:
-                                    uch.send(text);
-                            }
-                        }
-                    }
-                    this.channels.Living.send(text);
-                    alert_times_map[idx] = false;
-                }
-            }
-            this.isTimerProgress = true;
-            console.log(this.remTime);
-            console.log(now_unix_time);
-            if (waiting === false) {
-                clearTimeout(timer2);
-                console.log("timer finished!");
-                this.channels.Living.send(this.langTxt.sys.time_is_up);
-                func.bind(this, ...params);
-                this.isTimerProgress = false;
-            }
-        }, 1000);
-        // while (waiting) {setTimeout(() => {}, 1000);}
-    }
 }
 exports.default = GameState;
-// Game timer of the game. Do not use "this." in the function.
-function gameTimer(gid, obj, tPhase, alert_times, func, callFromTimer = false) {
-    //! no use "this."
-    console.log(obj.remTime);
-    if (gid != obj.gameId) {
-        console.log(`gid: ${gid} != obj.gameId: ${obj.gameId}`);
-        return;
-    }
-    ;
-    if (obj.phase != tPhase) {
-        console.log(`obj.phase: ${obj.phase} != tPhase: ${tPhase}`);
-        return;
-    }
-    ;
-    obj.isTimerProgress = true;
-    if (obj.stopTimerRequest) {
-        console.log("Receive external timer stop request.");
-        obj.timerList.push(setTimeout(gameTimer, 1000, gid, obj, tPhase, alert_times, func, true));
-        return;
-    }
-    if (alert_times.find(v => v === obj.remTime) != null) {
-        const text = (0, GameUtils_1.format)(obj.langTxt.sys.remaining_time, { time: obj.getTimeFormatFromSec(obj.remTime) });
-        if (obj.phase == exports.Phase.p3_FirstNight) {
-            console.log("obj.phase == Phase.p3_FirstNight");
-            obj.channels.Werewolf.send(text);
-        }
-        else if (obj.phase == exports.Phase.p5_Vote) {
-            console.log("obj.phase == Phase.p5_Vote");
-            obj.broadcastLivingUserChannel(text);
-        }
-        else if (obj.phase == exports.Phase.p6_Night) {
-            console.log("obj.phase == Phase.p6_Night");
-            obj.channels.Werewolf.send(text);
-            for (const uid in obj.members) {
-                if (!obj.members[uid].isLiving)
-                    continue;
-                const uch = obj.members[uid].uchannel;
-                if (uch == null)
-                    continue;
-                const role = obj.members[uid].role;
-                switch (role) {
-                    case Role.Seer:
-                    case Role.Knight:
-                        uch.send(text);
-                }
-            }
-        }
-        obj.channels.Living.send(text);
-    }
-    if (obj.remTime <= 0) {
-        console.log("timer finished!");
-        obj.channels.Living.send(obj.langTxt.sys.time_is_up);
-        obj.isTimerProgress = false;
-        func(gid, obj);
-    }
-    else {
-        obj.remTime -= 1;
-        obj.timerList.push(setTimeout(gameTimer, 1000, gid, obj, tPhase, alert_times, func, true));
-    }
-}
-// Game timer of the game. Do not use "this." in the function.
-function gameTimer3(gid, obj, alert_times, func) {
-    console.log("start game timer");
-    let stopped_time = 0;
-    let alert_times_map = alert_times.map((atime) => (atime < obj.target_time - current_unix_time()) ? true : false);
-    let waiting = true;
-    const timer2 = setInterval(() => {
-        const now_unix_time = current_unix_time();
-        if (obj.stopTimerRequest) {
-            console.log("Timer is stopping.");
-            stopped_time = current_unix_time() - now_unix_time;
-            return;
-        }
-        obj.target_time = obj.target_time + stopped_time;
-        stopped_time = 0;
-        obj.remTime = obj.target_time - now_unix_time;
-        if (obj.remTime <= 0) {
-            waiting = false;
-        }
-        for (const idx in alert_times) {
-            if (!alert_times_map[idx]) {
-                continue;
-            }
-            const atime = alert_times[idx];
-            if (obj.remTime <= atime) {
-                const text = (0, GameUtils_1.format)(obj.langTxt.sys.remaining_time, { time: obj.getTimeFormatFromSec(atime) });
-                if (obj.phase == exports.Phase.p3_FirstNight) {
-                    obj.channels.Werewolf.send(text);
-                }
-                else if (obj.phase == exports.Phase.p5_Vote) {
-                    obj.broadcastLivingUserChannel(text);
-                }
-                else if (obj.phase == exports.Phase.p6_Night) {
-                    obj.channels.Werewolf.send(text);
-                    for (const uid in obj.members) {
-                        if (!obj.members[uid].isLiving)
-                            continue;
-                        const uch = obj.members[uid].uchannel;
-                        if (uch == null)
-                            continue;
-                        const role = obj.members[uid].role;
-                        switch (role) {
-                            case Role.Seer:
-                            case Role.Knight:
-                                uch.send(text);
-                        }
-                    }
-                }
-                obj.channels.Living.send(text);
-                alert_times_map[idx] = false;
-            }
-        }
-        obj.isTimerProgress = true;
-        console.log(obj.remTime);
-        console.log(now_unix_time);
-        if (waiting === false) {
-            clearTimeout(timer2);
-            console.log("timer finished!");
-            obj.channels.Living.send(obj.langTxt.sys.time_is_up);
-            obj.isTimerProgress = false;
-            func(gid, obj);
-        }
-    }, 1000);
-}
-////////////////////////////////////////////
-// dummys
-////////////////////////////////////////////
-/*
-async function dummy_gamePreparation(gid : number, obj : GameState) {
-    console.log("function dummy_gamePreparation");
-    if (gid != obj.gameId) {
-        console.log("something wrong.");
-        console.log(`gid: ${gid} != obj.gameId: ${obj.gameId}`);
-        return
-    } else {
-        console.log(`gid: ${gid} == obj.gameId: ${obj.gameId}`);
-        await obj.gamePreparation();
-    };
-}
-*/
-async function dummy_gamePreparation2(gid, obj) {
-    if (gid != obj.gameId) {
-        console.log(`gid: ${gid} != obj.gameId: ${obj.gameId}`);
-        return;
-    }
-    else {
-        console.log(`gid: ${gid} == obj.gameId: ${obj.gameId}`);
-        await obj.gamePreparation2();
-    }
-    ;
-}
-async function dummy_startP4Daytime(gid, obj) {
-    if (gid != obj.gameId)
-        return;
-    await obj.startP4_Daytime();
-}
-async function dummy_startP5Vote(gid, obj) {
-    if (gid != obj.gameId)
-        return;
-    await obj.startP5_Vote();
-}
-async function dummy_voteTimeup(gid, obj) {
-    if (gid != obj.gameId)
-        return;
-    obj.voteTimeup();
-}
-async function dummy_nightFinish(gid, obj) {
-    await obj.nightFinish();
-}
-async function dummy_gameEndFinish(gid, obj) {
-    obj.gameEndFinish();
-}
 //# sourceMappingURL=GameState.js.map

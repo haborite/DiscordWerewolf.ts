@@ -49,6 +49,10 @@ export class GameChannels {
     }
 }
 
+export function current_unix_time(): number {
+    return Math.round(Date.now() / 1000)
+}
+
 export function format(msg: string, obj: any): string {
     return msg.replace(/\{(\w+)\}/g, (m, k) => {  // m="{id}", k="id"
         return obj[k];

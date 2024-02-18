@@ -1,6 +1,7 @@
 import * as Discord from "discord.js";
 import {GameChannels, format, isThisCommand, assertUnreachable, shuffle, loadAndSetSysRuleSet, updateHashValueWithFormat} from "./GameUtils"
 import * as Util from "./GameUtils"
+import * as Timer from "./GameTimer"
 import {LangType, RuleType, RolesStr, SeerPriestType, ServerSettingsType, RuleTypeFormat} from "./JsonType";
 
 export const Phase = {
@@ -15,7 +16,7 @@ export const Phase = {
 } as const;
 type Phase = typeof Phase[keyof typeof Phase];
 
-const Role = stringToEnum([
+export const Role = stringToEnum([
     'Villager',
     'Seer',
     'Priest',
@@ -78,10 +79,6 @@ function SightResult(r : Role){
         default:
             assertUnreachable(r);
     }
-}
-
-function current_unix_time(): number {
-    return Math.round(Date.now() / 1000)
 }
 
 function hhmmss_str(unix_time_str: number): string {
@@ -274,13 +271,12 @@ export default class GameState {
     possibleRoles: { [key: string]: number; }  = Object.create(null);
     emoText      : { [key: string]: string; }  = Object.create(null);
     roleText     : { [key: string]: string; }  = Object.create(null);
-    members     : { [key: string]: GameMember; }  = Object.create(null);
+    members      : { [key: string]: GameMember; }  = Object.create(null);
     reqMemberNum : number = 0;
     interactControllers : { [key: string]: Discord.Message; }[] = [];
     reactedMember : { [key: string]: number; }  = Object.create(null);
     cutTimeMember : { [key: string]: number; }  = Object.create(null);
     p2CanForceStartGame : boolean;
-    remTime         : number;
     daytimeStartTime: number = 0;
     stopTimerRequest: boolean;
     isTimerProgress : boolean;
@@ -297,6 +293,9 @@ export default class GameState {
     timerList       : NodeJS.Timeout[];
     magicnumber     : number;
     target_time     : number;
+    stopped_time    : number;
+    is_skipped      : boolean;
+
 
     // Game construction method
     constructor(
@@ -320,7 +319,6 @@ export default class GameState {
         this.parentID    = parentID;
         this.gameId      = -1;
         this.p2CanForceStartGame = false;
-        this.remTime     = -1;
         this.stopTimerRequest  = false;
         this.isTimerProgress   = false;
         this.dayNumber   = -1;
@@ -332,9 +330,11 @@ export default class GameState {
         this.wolfValidTo   = [];
         this.wolfValidFrom = [];
         this.wolfLog       = [];
-        this.timerList   = [];
-        this.magicnumber = 0;
-        this.target_time = 0;
+        this.timerList     = [];
+        this.magicnumber   = 0;
+        this.target_time   = 0;
+        this.stopped_time  = 0;
+        this.is_skipped = false;
         this.reset()
         this.setRoles2(this.ruleSetting)
         this.phase       = Phase.p0_UnStarted;
@@ -364,7 +364,6 @@ export default class GameState {
         this.gameId = Math.floor(Math.random() * 0x40000000);
         this.interactControllers = [];
         this.p2CanForceStartGame = false;
-        this.remTime     = -1;
         this.stopTimerRequest = false;
         this.isTimerProgress  = false;
         this.dayNumber       = -1;
@@ -690,6 +689,30 @@ export default class GameState {
             this.sendRuleSummary(this.channels.Living);
         }
         console.log(this.ruleSetting);
+    }
+
+    // Shift phase
+    next_phase() {
+        switch (this.phase) {
+            case Phase.p2_Preparation:
+                this.gamePreparation2();
+                break            
+            case Phase.p3_FirstNight:
+                this.startP4_Daytime();
+                break
+            case Phase.p4_Daytime:
+                this.startP5_Vote();
+                break
+            case Phase.p5_Vote:
+                this.voteTimeup();
+                break
+            case Phase.p6_Night:
+                this.nightFinish();
+                break
+            case Phase.p7_GameEnd:
+                this.gameEndFinish();
+                break
+        }
     }
 
     // Phase 0 start
@@ -1091,7 +1114,10 @@ export default class GameState {
         if(this.isTimerProgress){
             this.stopTimerRequest = true;
             this.channels.Living.send({embeds: [{
-                title: format(this.langTxt.sys.stop_timer, {time : this.getTimeFormatFromSec(this.remTime), cmd : this.langTxt.sys.cmd_resume_timer[0]}),
+                title: format(
+                    this.langTxt.sys.stop_timer, 
+                    {time : this.getTimeFormatFromSec(this.target_time - Util.current_unix_time()), cmd : this.langTxt.sys.cmd_resume_timer[0]}
+                ),
                 color: this.langTxt.sys.system_color,
             }]});
         } else {
@@ -1104,7 +1130,10 @@ export default class GameState {
         if(this.isTimerProgress){
             this.stopTimerRequest = false;
             this.channels.Living.send({embeds: [{
-                title: format(this.langTxt.sys.restart_timer, {time : this.getTimeFormatFromSec(this.remTime)}),
+                title: format(
+                    this.langTxt.sys.restart_timer,
+                    {time : this.getTimeFormatFromSec(this.target_time + this.stopped_time - Util.current_unix_time())}
+                ),
                 color: this.langTxt.sys.system_color,
             }]});
         } else {
@@ -1269,7 +1298,6 @@ export default class GameState {
             return;            
         }
 
-        // gTimer(this.gameId, this, Phase.p2_Preparation, [], dummy_gamePreparation);
         const scheduled_datetime_str = message.content.substring(this.langTxt.p1.cmd_start[idx].length).trim();
         console.log(scheduled_datetime_str);
         let scheduled_unixtime = 0;
@@ -1308,22 +1336,21 @@ export default class GameState {
             description : schedule_desc,
             color       : this.langTxt.sys.system_color,
         }]});
-        // const target_unix_time = current_unix_time() + 60;
+
         if (scheduled_unixtime === 0) {
             return
         }
+        
         console.log(scheduled_unixtime);
-        // let waiting = true;
+
         let go_flag = 0;
         const current_mn = 0 + this.magicnumber;
         const timer1 = setInterval(() => {
-            const now = current_unix_time();
+            const now = Util.current_unix_time();
             if (now >= scheduled_unixtime) {
-                // waiting = false;
                 go_flag = 1;
             }
             if (current_mn != this.magicnumber) {
-                // waiting = false;
                 go_flag = 2;
             }
             console.log(now);
@@ -1339,9 +1366,6 @@ export default class GameState {
                 }]});
             }
         }, 1000);
-        /*
-        while (waiting) {setTimeout(() => {}, 1000);}
-        */
 
     }
 
@@ -1377,10 +1401,8 @@ export default class GameState {
         this.updateRoomsRW();
 
         if(this.ruleSetting.wish_role_time <= 0){
-            console.log("this.ruleSetting.wish_role_time <= 0");
             await this.gamePreparation2();
         } else {
-            console.log("this.ruleSetting.wish_role_time > 0");
 
             // Initialize interactControllers of wishRole
             this.interactControllers[InteractType.WishRole] = Object.create(null);
@@ -1427,15 +1449,8 @@ export default class GameState {
                     this.interactControllers[InteractType.WishRole][sent_message.id] = sent_message;
                 }
             }
-            this.remTime = this.ruleSetting.wish_role_time;
-            this.target_time = current_unix_time() + this.ruleSetting.wish_role_time;
-            // console.log(`remTime: ${this.remTime}`);
-            // console.log(`this: ${this}`);
-            // console.log(`phase: ${this.phase}`);
-            // gameTimer(this.gameId, this, Phase.p2_Preparation, [], dummy_gamePreparation2);
-            // this.gameTimer2(this.ruleSetting.wish_role_time, [], this.gamePreparation2, []);
-            //this.gamePreparation2();
-            gameTimer3(this.gameId, this, [], dummy_gamePreparation2);
+            this.target_time = Util.current_unix_time() + this.ruleSetting.wish_role_time;
+            Timer.gameTimer3(this, []);
         }
     }
 
@@ -1543,8 +1558,6 @@ export default class GameState {
     // Remove first victims, assign roles, prepare common rooms, send messages, start the first night
     async gamePreparation2() {
 
-        console.log("gamePreparation2");
-
         const enable_confirmation = ((this.ruleSetting.wish_role_time <= 0) && (this.ruleSetting.confirmation_sec > 0));
 
         // Remove first victims
@@ -1569,37 +1582,28 @@ export default class GameState {
                 this.playingRoles[r] = 1;
             }
         }
-        console.log("this.playingRoles:");
         console.log(this.playingRoles);
 
         // Assign roles
         let role_arr : Role[] = [];
         if (this.ruleSetting.wish_role_time <= 0) {
-            console.log("this.ruleSetting.wish_role_time <= 0");
             for(const r in this.playingRoles){
                 for(let i = 0; i < this.playingRoles[r]; ++i){
                     role_arr.push(r as Role);
                 }
             }
             role_arr = shuffle(role_arr);
-        } else {
-            console.log("this.ruleSetting.wish_role_time > 0");            
+        } else {        
             let roles : Role[] = [];
             for (const r in this.playingRoles) {
                 for (let i = 0; i < this.playingRoles[r]; ++i) {
                     roles.push(r as Role);
                 }
             }
-            console.log("roles before shuffle:");
-            console.log(roles);
             roles = shuffle(roles);
-            console.log("roles after shuffle:");
-            console.log(roles);
 
             this.interactControllers[InteractType.WishRole] = Object.create(null);
             const members = shuffle(Object.keys(this.members));
-            console.log("members:");
-            console.log(members);
             const scale = 100000;
             let mat : number[][] = new Array<number[]>(members.length);
             for(let i = 0; i < members.length; ++i){
@@ -1855,7 +1859,6 @@ export default class GameState {
     // Phase.p3_FirstNight
     startFirstNight() {
         this.phase = Phase.p3_FirstNight;
-        this.remTime = this.ruleSetting.first_night.first_night_time;
         this.updateRoomsRW();
         this.interactControllers[InteractType.Accept] = Object.create(null);
         for(let my_id in this.members){
@@ -1898,29 +1901,23 @@ export default class GameState {
             this.killNext.push(["0", 0]);
         }
         
+        const first_night_time = this.ruleSetting.first_night.first_night_time;
+        this.target_time = first_night_time + Util.current_unix_time();
         this.channels.Living.send({embeds:[{
             title: format(
                 this.langTxt.p3.length_of_the_first_night,
                 {
-                    time: this.getTimeFormatFromSec(this.remTime),
-                    date: date_str(current_unix_time() + this.remTime),
-                    hhmmss: hhmmss_str(current_unix_time() + this.remTime),
+                    time: this.getTimeFormatFromSec(first_night_time),
+                    date: date_str(this.target_time),
+                    hhmmss: hhmmss_str(this.target_time),
                 }
             ),
             color: this.langTxt.sys.system_color,
         }]});
-        // this.httpGameState.updatePhase(this.langTxt.p3.phase_name);
+
         this.stopTimerRequest = false;
-        // gameTimer(this.gameId, this, Phase.p3_FirstNight, this.ruleSetting.first_night.alert_times, dummy_startP4Daytime);
-        // this.gameTimer2(this.ruleSetting.first_night.first_night_time, this.ruleSetting.first_night.alert_times, this.startP4_Daytime, []);
-        // this.startP4_Daytime();
-        this.target_time = current_unix_time() + this.ruleSetting.first_night.first_night_time;
-        gameTimer3(
-            this.gameId,
-            this,
-            this.ruleSetting.first_night.alert_times,
-            dummy_startP4Daytime
-        );
+
+        Timer.gameTimer3(this, this.ruleSetting.first_night.alert_times);
     }
 
     // Phase.p4_Daytime
@@ -2006,14 +2003,17 @@ export default class GameState {
             }
         }
 
-        this.remTime = Math.max(0, this.ruleSetting.day.length - this.ruleSetting.day.reduction_time * (this.dayNumber - 1));
+        const daytime_length = Math.max(0, this.ruleSetting.day.length - this.ruleSetting.day.reduction_time * (this.dayNumber - 1));
+        const now_unix_time = Util.current_unix_time();
+        this.target_time = now_unix_time + daytime_length;
+
         this.channels.Living.send({embeds:[{
             title: format(
                 this.langTxt.p4.length_of_the_day,
                 {
-                    time : this.getTimeFormatFromSec(this.remTime),
-                    date: date_str(current_unix_time() + this.remTime),
-                    hhmmss: hhmmss_str(current_unix_time() + this.remTime),
+                    time : this.getTimeFormatFromSec(daytime_length),
+                    date: date_str(this.target_time),
+                    hhmmss: hhmmss_str(this.target_time),
                 }
             ),
             color: this.langTxt.sys.system_color,
@@ -2044,11 +2044,7 @@ export default class GameState {
             this.interactControllers[InteractType.CutTime][sent_message.id] = sent_message;
         }
         
-        // gameTimer(this.gameId, this, Phase.p4_Daytime, this.ruleSetting.day.alert_times, dummy_startP5Vote);
-        // this.gameTimer2(this.ruleSetting.day.length , this.ruleSetting.day.alert_times, this.startP5_Vote, []);
-        // this.startP5_Vote();
-        this.target_time = current_unix_time() + this.ruleSetting.day.length;
-        gameTimer3(this.gameId, this, this.ruleSetting.day.alert_times, dummy_startP5Vote);
+        Timer.gameTimer3(this, this.ruleSetting.day.alert_times);
     }
 
     async makeDictatorController(){
@@ -2112,8 +2108,8 @@ export default class GameState {
                     this.langTxt.p5.end_daytime,
                     {
                         time : this.getTimeFormatFromSec(this.ruleSetting.vote.length),
-                        date: date_str(current_unix_time() + this.ruleSetting.vote.length),
-                        hhmmss: hhmmss_str(current_unix_time() + this.ruleSetting.vote.length),
+                        date: date_str(Util.current_unix_time() + this.ruleSetting.vote.length),
+                        hhmmss: hhmmss_str(Util.current_unix_time() + this.ruleSetting.vote.length),
                     }),
                 color: this.langTxt.sys.system_color,
             }]});
@@ -2156,13 +2152,9 @@ export default class GameState {
             });
             this.interactControllers[InteractType.Vote][sent_message.id] = sent_message;
         }
-        this.remTime = this.ruleSetting.vote.length;
         this.stopTimerRequest = false;
-        // gameTimer(this.gameId, this, Phase.p5_Vote, this.ruleSetting.vote.alert_times, dummy_voteTimeup);
-        // this.gameTimer2(this.ruleSetting.vote.length, this.ruleSetting.vote.alert_times, this.voteTimeup, []);
-        // this.voteTimeup();
-        this.target_time = current_unix_time() + this.ruleSetting.vote.length;
-        gameTimer3(this.gameId, this, this.ruleSetting.vote.alert_times, dummy_voteTimeup);
+        this.target_time = Util.current_unix_time() + this.ruleSetting.vote.length;
+        Timer.gameTimer3(this, this.ruleSetting.vote.alert_times);
     }
     
     async voteTimeup(){
@@ -2337,15 +2329,17 @@ export default class GameState {
     // Phase.p6_Night
     async startP6_Night(){
         this.phase = Phase.p6_Night;
-        this.remTime = this.ruleSetting.night.length;
+        const night_length = this.ruleSetting.night.length;
+        const now_unix_time = Util.current_unix_time();
+        this.target_time = now_unix_time + night_length;
         this.updateRoomsRW();
 
         const nightComingMessage = format(
             this.langTxt.p6.start,
             {
-                time : this.getTimeFormatFromSec(this.remTime),
-                date: date_str(current_unix_time() + this.remTime),
-                hhmmss: hhmmss_str(current_unix_time() + this.remTime),
+                time : this.getTimeFormatFromSec(night_length),
+                date: date_str(this.target_time),
+                hhmmss: hhmmss_str(this.target_time),
             }
         );
         const nightComingEmbed = {embeds:[new Discord.EmbedBuilder({
@@ -2361,19 +2355,20 @@ export default class GameState {
             if(uch == null) return this.err();
             const role = this.members[my_id].role;
 
-            if(role == Role.Priest){
+            if (role === Role.Priest) {
                 uch.send(getUserMentionStrFromId(my_id) + nightComingMessage);
                 this.sendFP_Result(my_id, uch, this.lastExecuted, this.langTxt.priest, this.langTxt.role_img.Priest);
-            }else if(role == Role.Knight){
+
+            } else if(role === Role.Knight) {
                 uch.send(getUserMentionStrFromId(my_id) + nightComingMessage);
                 this.interactControllers[InteractType.Knight] = Object.create(null);
                 this.members[my_id].validVoteID = [];
                 let lastGuard = "";
-                if(!this.ruleSetting.continuous_guard && this.members[my_id].actionLog.length > 0){
+                if (!this.ruleSetting.continuous_guard && this.members[my_id].actionLog.length > 0) {
                     lastGuard = this.members[my_id].actionLog.slice(-1)[0][0];
                 }
                 let buttons    : Discord.ButtonBuilder[] = [];
-                for(const tid in this.members){
+                for (const tid in this.members) {
                     if(tid == my_id) continue;
                     if(tid == lastGuard) continue;
                     if(!this.members[tid].isLiving) continue;
@@ -2390,19 +2385,20 @@ export default class GameState {
                     components: Util.arrange_buttons(buttons)
                 })
                 this.interactControllers[InteractType.Knight][sent_message.id] = sent_message;
-            } else if(role == Role.Seer){
+
+            } else if(role === Role.Seer) {
                 uch.send(getUserMentionStrFromId(my_id) + nightComingMessage);
                 this.interactControllers[InteractType.Seer] = Object.create(null);
                 this.members[my_id].validVoteID = [];
-                let buttons    : Discord.ButtonBuilder[] = [];
-                for(const tid in this.members){
-                    if(tid == my_id) continue;
-                    if(!this.members[tid].isLiving) continue;
-                    if(this.members[my_id].actionLog.find(p => p[0] == tid) != null) continue;
+                let buttons : Discord.ButtonBuilder[] = [];
+                for (const tid in this.members) {
+                    if (tid === my_id) continue;
+                    if (!this.members[tid].isLiving) continue;
+                    if (this.members[my_id].actionLog.find(p => p[0] === tid) != null) continue;
                     this.members[my_id].validVoteID.push(tid);
                     buttons.push(Util.make_button(tid, this.members[tid].nickname, {style : "blue"}));
                 }
-                if(this.members[my_id].validVoteID.length == 0){
+                if (this.members[my_id].validVoteID.length === 0) {
                     this.sendFP_Result(my_id, uch, null, this.langTxt.seer, this.langTxt.role_img.Seer);
                 } else {
                     const embed = new Discord.EmbedBuilder({
@@ -2410,11 +2406,11 @@ export default class GameState {
                         title       : this.langTxt.seer.title,
                         color       : this.langTxt.team_color[getDefaultTeams(role)],
                     });
-                    if(this.members[my_id].validVoteID.length == 1){
+                    if (this.members[my_id].validVoteID.length == 1) {
                         uch.send({embeds: [embed]});
                         this.sendFP_Result(my_id, uch, this.members[my_id].validVoteID[0], this.langTxt.seer, this.langTxt.role_img.Seer);
                         this.members[my_id].validVoteID = [];
-                    }else{
+                    } else {
                         const sent_message = await uch.send({
                             embeds: [embed],
                             components: Util.arrange_buttons(buttons)
@@ -2486,11 +2482,8 @@ export default class GameState {
         }
         
         this.stopTimerRequest = false;
-        // gameTimer(this.gameId, this, Phase.p6_Night, this.ruleSetting.night.alert_times, dummy_nightFinish);
-        // this.gameTimer2(this.ruleSetting.night.length, this.ruleSetting.night.alert_times, this.nightFinish, []);
-        // this.nightFinish();
-        this.target_time = current_unix_time() + this.ruleSetting.night.length;
-        gameTimer3(this.gameId, this, this.ruleSetting.night.alert_times, dummy_nightFinish);
+
+        Timer.gameTimer3(this, this.ruleSetting.night.alert_times);
     }
 
     nightKnightCheck(interaction : Discord.ButtonInteraction) {
@@ -2498,8 +2491,8 @@ export default class GameState {
         if(tid == null) return;
         const uid = interaction.user.id;
         const uch = this.members[uid].uchannel;
-        if(uch == null) return this.err();
-        if(this.members[uid].validVoteID.find(i => i == tid)){
+        if (uch == null) return this.err();
+        if (this.members[uid].validVoteID.find(i => i == tid)) {
             const change = this.members[uid].voteTo != "";
             const role = Role.Knight;
             const author: Discord.EmbedAuthorOptions = {
@@ -2521,13 +2514,13 @@ export default class GameState {
 
     nightSeerCheck(interaction : Discord.ButtonInteraction) {
         const tid = Object.keys(this.members).find(mid => mid == interaction.customId);
-        if(tid == null) return;
+        if (tid == null) return;
         const uid = interaction.user.id;
         const uch = this.members[uid].uchannel;
-        if(uch == null) return this.err();
+        if (uch == null) return this.err();
 
-        if(this.members[uid].voteTo != "") return;
-        if(this.members[uid].validVoteID.find(i => i == tid)){
+        if (this.members[uid].voteTo != "") return;
+        if (this.members[uid].validVoteID.find(i => i == tid)) {
             this.members[uid].voteTo = tid;
             this.members[uid].validVoteID = [];
             interaction.update({});
@@ -2584,11 +2577,9 @@ export default class GameState {
             interaction.reply(txt);
             this.channels.Living.send(txt);
             if (now >= req) {
-                const updated_remTime = Math.min(12, this.remTime);
-                const updated_target_time = Math.min(current_unix_time() + 12, this.target_time);
-                this.channels.Living.send(format(this.langTxt.p4.cut_time_approved, {cut_time: updated_remTime}));
-                this.remTime = updated_remTime;
-                this.target_time = updated_target_time;
+                this.is_skipped = true;
+                this.target_time = Math.min(Util.current_unix_time() + 10, this.target_time);
+                this.channels.Living.send(format(this.langTxt.p4.cut_time_approved, {cut_time: this.target_time - Util.current_unix_time()}));
             }
         }
     }
@@ -2741,17 +2732,20 @@ export default class GameState {
             MentionText += getUserMentionStrFromId(mid) + " ";
         }
 
-        this.remTime = this.ruleSetting.after_game.length;
-        MentionText += "\n" + format(this.langTxt.p7.continue, {time : this.getTimeFormatFromSec(this.remTime), cmd : this.langTxt.p7.cmd_continue[0], brk : this.langTxt.p7.cmd_breakup[0]});
+        this.target_time = Util.current_unix_time() + this.ruleSetting.after_game.length;
+        MentionText += "\n" + format(
+            this.langTxt.p7.continue,
+            {
+                time : this.getTimeFormatFromSec(this.ruleSetting.after_game.length),
+                cmd : this.langTxt.p7.cmd_continue[0], 
+                brk : this.langTxt.p7.cmd_breakup[0]
+            }
+        );
         this.channels.Living.send(MentionText);
         
-        // this.remTime = this.ruleSetting.after_game.length;
         this.stopTimerRequest = false;
-        // gameTimer(this.gameId, this, Phase.p7_GameEnd, this.ruleSetting.after_game.alert_times, dummy_gameEndFinish);
-        // this.gameTimer2(this.ruleSetting.after_game.length, this.ruleSetting.after_game.alert_times, this.gameEndFinish, []);
-        // this.gameEndFinish();
-        this.target_time = current_unix_time() + this.ruleSetting.after_game.length;
-        gameTimer3(this.gameId, this, this.ruleSetting.after_game.alert_times, dummy_gameEndFinish);
+        
+        Timer.gameTimer3(this, this.ruleSetting.after_game.alert_times);
     }
 
     gameEndFinish() {
@@ -2904,7 +2898,7 @@ export default class GameState {
                 }
             }
             if(i == InteractType.Seer){
-                if(this.phase == Phase.p6_Night) {
+                if (this.phase == Phase.p6_Night) {
                     if(interaction.channelId != uch.id) return;
                     this.nightSeerCheck(interaction);
                     return;
@@ -3117,286 +3111,5 @@ export default class GameState {
 
     }
 
-    // Improved game timer of the game.
-    gameTimer2(
-        length : number,
-        alert_times : number[], 
-        func : (...args: any[]) => any,
-        params : any[],
-    ) {
-        console.log("start game timer");
-
-        let alert_times_map = alert_times.map((atime) => (atime < length) ? true : false);
-        let stopped_time = 0;
-        let now_unix_time = current_unix_time()
-        let scheduled_unixtime = now_unix_time + length;
-        let waiting = true;
-
-        const timer2 = setInterval(() => {
-
-            if (this.stopTimerRequest) {
-                console.log("Timer is stopping.");
-                stopped_time = current_unix_time() - now_unix_time;     
-                return;
-            }
-            scheduled_unixtime = scheduled_unixtime + stopped_time;
-            stopped_time = 0;
-            now_unix_time = current_unix_time();
-            this.remTime = scheduled_unixtime - now_unix_time;
-            if (this.remTime <= 0) {
-                waiting = false;
-            }
-
-            for (const idx in alert_times) {
-                if (!alert_times_map[idx]) {
-                    continue
-                }
-                const atime = alert_times[idx]
-                if (this.remTime <= atime) {
-                    const text = format(
-                        this.langTxt.sys.remaining_time,
-                        {time : this.getTimeFormatFromSec(atime)}
-                    );
-                    if (this.phase == Phase.p3_FirstNight) {
-                        this.channels.Werewolf.send(text);
-                    } else if (this.phase == Phase.p5_Vote) {
-                        this.broadcastLivingUserChannel(text);
-                    } else if (this.phase == Phase.p6_Night) {
-                        this.channels.Werewolf.send(text);
-                        for(const uid in this.members){
-                            if (!this.members[uid].isLiving) continue;
-                            const uch = this.members[uid].uchannel;
-                            if (uch == null) continue;
-                            const role = this.members[uid].role;
-                            switch (role) {
-                                case Role.Seer:
-                                case Role.Knight:
-                                    uch.send(text);
-                            }
-                        }
-                    }
-                    this.channels.Living.send(text);
-                    alert_times_map[idx] = false;
-                }
-            }
-            this.isTimerProgress = true;
-
-            console.log(this.remTime);
-            console.log(now_unix_time);
-
-            if (waiting === false) {
-                clearTimeout(timer2);
-                console.log("timer finished!");
-                this.channels.Living.send(this.langTxt.sys.time_is_up);
-                func.bind(this, ...params);
-                this.isTimerProgress = false;
-            }
-
-        }, 1000);
-
-        // while (waiting) {setTimeout(() => {}, 1000);}
-
-    }
-
 }
 
-// Game timer of the game. Do not use "this." in the function.
-function gameTimer(
-    gid : number, 
-    obj : GameState, 
-    tPhase : Phase, 
-    alert_times : number[], 
-    func : (gid : number, obj : GameState) => unknown,
-    callFromTimer : boolean = false
-) {
-    //! no use "this."
-    console.log(obj.remTime);
-
-    if (gid != obj.gameId) {
-        console.log(`gid: ${gid} != obj.gameId: ${obj.gameId}`);
-        return
-    };
-    if (obj.phase != tPhase) {
-        console.log(`obj.phase: ${obj.phase} != tPhase: ${tPhase}`);
-        return
-    };
-    obj.isTimerProgress = true;
-    if (obj.stopTimerRequest) {
-        console.log("Receive external timer stop request.");
-        obj.timerList.push(setTimeout(gameTimer, 1000, gid, obj, tPhase, alert_times, func, true));
-        return;
-    }
-    
-    if (alert_times.find(v => v === obj.remTime) != null) {
-        
-        const text = format(obj.langTxt.sys.remaining_time, {time : obj.getTimeFormatFromSec(obj.remTime)});
-
-        if(obj.phase == Phase.p3_FirstNight){
-            console.log("obj.phase == Phase.p3_FirstNight");
-            obj.channels.Werewolf.send(text);
-
-        } else if(obj.phase == Phase.p5_Vote) {
-            console.log("obj.phase == Phase.p5_Vote");
-            obj.broadcastLivingUserChannel(text);
-
-        } else if(obj.phase == Phase.p6_Night) {
-            console.log("obj.phase == Phase.p6_Night");
-            obj.channels.Werewolf.send(text);
-            for(const uid in obj.members){
-                if(!obj.members[uid].isLiving) continue;
-                const uch = obj.members[uid].uchannel;
-                if(uch == null) continue;
-                const role = obj.members[uid].role;
-                switch (role) {
-                    case Role.Seer:
-                    case Role.Knight:
-                        uch.send(text);
-                }
-            }
-        }
-        obj.channels.Living.send(text);
-    }
-
-    if (obj.remTime <= 0) {
-        console.log("timer finished!");
-        obj.channels.Living.send(obj.langTxt.sys.time_is_up);
-        obj.isTimerProgress = false;
-        func(gid, obj);
-    } else {
-        obj.remTime -= 1;
-        obj.timerList.push(setTimeout(gameTimer, 1000, gid, obj, tPhase, alert_times, func, true));
-    }
-}
-
-
-// Game timer of the game. Do not use "this." in the function.
-function gameTimer3(
-    gid : number, 
-    obj : GameState, 
-    alert_times : number[], 
-    func : (gid : number, obj : GameState) => unknown,
-) {
-
-    console.log("start game timer");
-
-    let stopped_time = 0;
-    let alert_times_map = alert_times.map(
-        (atime) => (atime < obj.target_time - current_unix_time()) ? true : false
-    );
-    let waiting = true;
-
-    const timer2 = setInterval(() => {
-
-        const now_unix_time = current_unix_time();
-
-        if (obj.stopTimerRequest) {
-            console.log("Timer is stopping.");
-            stopped_time = current_unix_time() - now_unix_time;     
-            return;
-        }
-        obj.target_time = obj.target_time + stopped_time;
-        stopped_time = 0;
-        obj.remTime = obj.target_time - now_unix_time;
-        if (obj.remTime <= 0) {
-            waiting = false;
-        }
-
-        for (const idx in alert_times) {
-            if (!alert_times_map[idx]) {
-                continue
-            }
-            const atime = alert_times[idx]
-            if (obj.remTime <= atime) {
-                const text = format(
-                    obj.langTxt.sys.remaining_time,
-                    {time : obj.getTimeFormatFromSec(atime)}
-                );
-                if (obj.phase == Phase.p3_FirstNight) {
-                    obj.channels.Werewolf.send(text);
-                } else if (obj.phase == Phase.p5_Vote) {
-                    obj.broadcastLivingUserChannel(text);
-                } else if (obj.phase == Phase.p6_Night) {
-                    obj.channels.Werewolf.send(text);
-                    for(const uid in obj.members){
-                        if (!obj.members[uid].isLiving) continue;
-                        const uch = obj.members[uid].uchannel;
-                        if (uch == null) continue;
-                        const role = obj.members[uid].role;
-                        switch (role) {
-                            case Role.Seer:
-                            case Role.Knight:
-                                uch.send(text);
-                        }
-                    }
-                }
-                obj.channels.Living.send(text);
-                alert_times_map[idx] = false;
-            }
-        }
-        obj.isTimerProgress = true;
-
-        console.log(obj.remTime);
-        console.log(now_unix_time);
-
-        if (waiting === false) {
-            clearTimeout(timer2);
-            console.log("timer finished!");
-            obj.channels.Living.send(obj.langTxt.sys.time_is_up);
-            obj.isTimerProgress = false;
-            func(gid, obj);
-        }
-
-    }, 1000);
-
-}
-
-
-
-////////////////////////////////////////////
-// dummys
-////////////////////////////////////////////
-
-/*
-async function dummy_gamePreparation(gid : number, obj : GameState) {
-    console.log("function dummy_gamePreparation");
-    if (gid != obj.gameId) {
-        console.log("something wrong.");
-        console.log(`gid: ${gid} != obj.gameId: ${obj.gameId}`);
-        return
-    } else {
-        console.log(`gid: ${gid} == obj.gameId: ${obj.gameId}`);
-        await obj.gamePreparation();
-    };
-}
-*/
-
-async function dummy_gamePreparation2(gid : number, obj : GameState) {
-    if (gid != obj.gameId) {
-        console.log(`gid: ${gid} != obj.gameId: ${obj.gameId}`);
-        return
-    } else {
-        console.log(`gid: ${gid} == obj.gameId: ${obj.gameId}`);
-        await obj.gamePreparation2();
-    };
-}
-
-async function dummy_startP4Daytime(gid : number, obj : GameState) {
-    if (gid != obj.gameId) return;
-    await obj.startP4_Daytime();
-}
-
-async function dummy_startP5Vote(gid : number, obj : GameState) {
-    if (gid != obj.gameId) return;
-    await obj.startP5_Vote();
-}
-async function dummy_voteTimeup(gid : number, obj : GameState) {
-    if (gid != obj.gameId) return;
-    obj.voteTimeup();
-}
-async function dummy_nightFinish(gid : number, obj : GameState) {
-    await obj.nightFinish();
-}
-
-async function dummy_gameEndFinish(gid : number, obj : GameState) {
-    obj.gameEndFinish();
-}

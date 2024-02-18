@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateHashValueWithFormat = exports.arrange_components = exports.arrange_buttons = exports.make_button = exports.ParseRuleStr = exports.loadAndSetSysRuleSet = exports.getTextFromAttachedJson5 = exports.shuffle = exports.assertUnreachable = exports.isThisCommand = exports.format = exports.GameChannels = void 0;
+exports.updateHashValueWithFormat = exports.arrange_components = exports.arrange_buttons = exports.make_button = exports.ParseRuleStr = exports.loadAndSetSysRuleSet = exports.getTextFromAttachedJson5 = exports.shuffle = exports.assertUnreachable = exports.isThisCommand = exports.format = exports.current_unix_time = exports.GameChannels = void 0;
 const Discord = __importStar(require("discord.js"));
 const fs = __importStar(require("fs"));
 const ts_json_validator_1 = require("ts-json-validator");
@@ -63,6 +63,10 @@ class GameChannels {
     }
 }
 exports.GameChannels = GameChannels;
+function current_unix_time() {
+    return Math.round(Date.now() / 1000);
+}
+exports.current_unix_time = current_unix_time;
 function format(msg, obj) {
     return msg.replace(/\{(\w+)\}/g, (m, k) => {
         return obj[k];

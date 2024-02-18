@@ -46,7 +46,6 @@ argv.option([
 ]);
 const arg = argv.run();
 const ServerSetting = loadAndSetServerSetting('./server_settings/default.json5', arg.options["server_setting"]);
-// console.log("ServerSetting", ServerSetting)
 const SysLangTxt = loadAndSetSysLangTxt("./lang/" + ServerSetting.system_lang + ".json5");
 const SysRuleSet = (0, GameUtils_1.loadAndSetSysRuleSet)("./rule_setting_templates/default.json5");
 if (SysLangTxt == null) {
@@ -65,8 +64,6 @@ const clients = [
 ];
 const Games = {};
 clients[0].on("ready", () => { console.log("Login! ", clients[0].user ? clients[0].user.username : ""); });
-// clients[1].on("ready", () => {console.log("Login! ", clients[1].user ? clients[1].user.username : "");});
-// const httpServer : HttpServer = new HttpServer(ServerSetting, SysLangTxt);
 function loadAndSetSysLangTxt(path, LangTxt) {
     const data = fs.readFileSync(path, 'utf-8');
     const json5 = JSON5.parse(data);
