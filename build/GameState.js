@@ -837,7 +837,12 @@ class GameState {
                         }
                     }
                     else {
-                        addPerm(uid, 0 /* Perm.NoAccess */, permWerewolf);
+                        if (this.members[uid].isLiving) {
+                            addPerm(uid, 0 /* Perm.NoAccess */, permWerewolf);
+                        }
+                        else {
+                            addPerm(uid, 1 /* Perm.ReadOnly */, permWerewolf);
+                        }
                     }
                     if (this.members[uid].allowMasonRoom) {
                         const enableDaytimeMasonRoom = true;
@@ -849,7 +854,12 @@ class GameState {
                         }
                     }
                     else {
-                        addPerm(uid, 0 /* Perm.NoAccess */, permMason);
+                        if (this.members[uid].isLiving) {
+                            addPerm(uid, 0 /* Perm.NoAccess */, permMason);
+                        }
+                        else {
+                            addPerm(uid, 1 /* Perm.ReadOnly */, permMason);
+                        }
                     }
                 }
                 break;
@@ -882,25 +892,35 @@ class GameState {
                     }
                     if (this.members[uid].allowWolfRoom) {
                         if (this.members[uid].isLiving) {
-                            addPerm(uid, 1 /* Perm.ReadOnly */, permWerewolf);
+                            addPerm(uid, 3 /* Perm.RW */, permWerewolf);
                         }
                         else {
                             addPerm(uid, 1 /* Perm.ReadOnly */, permWerewolf);
                         }
                     }
                     else {
-                        addPerm(uid, 0 /* Perm.NoAccess */, permWerewolf);
+                        if (this.members[uid].isLiving) {
+                            addPerm(uid, 0 /* Perm.NoAccess */, permWerewolf);
+                        }
+                        else {
+                            addPerm(uid, 1 /* Perm.ReadOnly */, permWerewolf);
+                        }
                     }
                     if (this.members[uid].allowMasonRoom) {
                         if (this.members[uid].isLiving) {
-                            addPerm(uid, 1 /* Perm.ReadOnly */, permMason);
+                            addPerm(uid, 3 /* Perm.RW */, permMason);
                         }
                         else {
                             addPerm(uid, 1 /* Perm.ReadOnly */, permMason);
                         }
                     }
                     else {
-                        addPerm(uid, 0 /* Perm.NoAccess */, permMason);
+                        if (this.members[uid].isLiving) {
+                            addPerm(uid, 0 /* Perm.NoAccess */, permMason);
+                        }
+                        else {
+                            addPerm(uid, 1 /* Perm.ReadOnly */, permMason);
+                        }
                     }
                 }
                 break;
@@ -935,7 +955,12 @@ class GameState {
                         }
                     }
                     else {
-                        addPerm(uid, 0 /* Perm.NoAccess */, permWerewolf);
+                        if (this.members[uid].isLiving) {
+                            addPerm(uid, 0 /* Perm.NoAccess */, permWerewolf);
+                        }
+                        else {
+                            addPerm(uid, 1 /* Perm.ReadOnly */, permWerewolf);
+                        }
                     }
                     if (this.members[uid].allowMasonRoom) {
                         if (this.members[uid].isLiving) {
@@ -946,7 +971,12 @@ class GameState {
                         }
                     }
                     else {
-                        addPerm(uid, 0 /* Perm.NoAccess */, permMason);
+                        if (this.members[uid].isLiving) {
+                            addPerm(uid, 0 /* Perm.NoAccess */, permMason);
+                        }
+                        else {
+                            addPerm(uid, 1 /* Perm.ReadOnly */, permMason);
+                        }
                     }
                 }
                 break;
@@ -2513,7 +2543,7 @@ class GameState {
             return;
         const isAdd = true; // TODO
         const liveNum = Object.keys(this.members).reduce((acc, value) => { return acc + (this.members[value].isLiving ? 1 : 0); }, 0);
-        const reqRule = this.ruleSetting.day.skip_vote_rule;
+        const reqRule = this.ruleSetting.skip_vote_rule;
         const req = (reqRule == "majority") ? (liveNum + 1) / 2 | 0 : liveNum;
         if (!isAdd) {
             delete this.cutTimeMember[uid];

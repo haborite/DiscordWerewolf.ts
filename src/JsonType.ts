@@ -553,6 +553,11 @@ export const RuleTypeFormat = obj({
     wish_role_rand_weight : num,
     wish_role_time        : num,
 
+    skip_vote_rule : union(
+        literal('all' as const),
+        literal('majority' as const),
+    ),
+
     first_night: obj({
         first_night_time : num,
         alert_times      : arr(num),
@@ -562,10 +567,6 @@ export const RuleTypeFormat = obj({
         length         : num,
         reduction_time : num,
         alert_times    : arr(num),
-        skip_vote_rule : union(
-            literal('all' as const),
-            literal('majority' as const),
-        ),
     }),
     
     night: obj({

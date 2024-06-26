@@ -54,6 +54,8 @@
     wish_role_rand_weight : 3,
     wish_role_time        : 30,
 
+    skip_vote_rule : "majority",
+
     first_night : {
         first_night_time : 60,
         alert_times : [],
@@ -63,7 +65,6 @@
         length         : 600,
         reduction_time : 0,
         alert_times    : [30, 60, 120],
-        skip_vote_rule : "majority",
     },
 
     night : {

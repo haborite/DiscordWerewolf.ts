@@ -848,7 +848,11 @@ export default class GameState {
                             addPerm(uid, Perm.ReadOnly, permWerewolf);
                         }
                     } else {
-                        addPerm(uid, Perm.NoAccess, permWerewolf);
+                        if (this.members[uid].isLiving) {
+                            addPerm(uid, Perm.NoAccess, permWerewolf);
+                        } else {
+                            addPerm(uid, Perm.ReadOnly, permWerewolf);
+                        }
                     }
                     if (this.members[uid].allowMasonRoom) {
                         const enableDaytimeMasonRoom = true;
@@ -858,7 +862,11 @@ export default class GameState {
                             addPerm(uid, Perm.ReadOnly, permMason);
                         }
                     } else {
-                        addPerm(uid, Perm.NoAccess, permMason);
+                        if (this.members[uid].isLiving) {
+                            addPerm(uid, Perm.NoAccess, permMason);
+                        } else {
+                            addPerm(uid, Perm.ReadOnly, permMason);
+                        }
                     }
                 }
                 break;
@@ -889,21 +897,29 @@ export default class GameState {
                     }
                     if (this.members[uid].allowWolfRoom) {
                         if(this.members[uid].isLiving) {
-                            addPerm(uid, Perm.ReadOnly, permWerewolf);
+                            addPerm(uid, Perm.RW,       permWerewolf);
                         } else {
                             addPerm(uid, Perm.ReadOnly, permWerewolf);
                         }
                     } else {
-                        addPerm(uid, Perm.NoAccess, permWerewolf);
+                        if (this.members[uid].isLiving) {
+                            addPerm(uid, Perm.NoAccess, permWerewolf);
+                        } else {
+                            addPerm(uid, Perm.ReadOnly, permWerewolf);
+                        }
                     }
                     if (this.members[uid].allowMasonRoom) {
                         if(this.members[uid].isLiving) {
-                            addPerm(uid, Perm.ReadOnly, permMason);
+                            addPerm(uid, Perm.RW,       permMason);
                         } else {
                             addPerm(uid, Perm.ReadOnly, permMason);
                         }
                     } else {
-                        addPerm(uid, Perm.NoAccess, permMason);
+                        if (this.members[uid].isLiving) {
+                            addPerm(uid, Perm.NoAccess, permMason);
+                        } else {
+                            addPerm(uid, Perm.ReadOnly, permMason);
+                        }
                     }
                 }
                 break;
@@ -935,7 +951,11 @@ export default class GameState {
                             addPerm(uid, Perm.ReadOnly, permWerewolf);
                         }
                     } else {
-                        addPerm(uid, Perm.NoAccess, permWerewolf);
+                        if (this.members[uid].isLiving) {
+                            addPerm(uid, Perm.NoAccess, permWerewolf);
+                        } else {
+                            addPerm(uid, Perm.ReadOnly, permWerewolf);
+                        }
                     }
                     if(this.members[uid].allowMasonRoom){
                         if(this.members[uid].isLiving) {
@@ -944,7 +964,11 @@ export default class GameState {
                             addPerm(uid, Perm.ReadOnly, permMason);
                         }
                     } else {
-                        addPerm(uid, Perm.NoAccess, permMason);
+                        if (this.members[uid].isLiving) {
+                            addPerm(uid, Perm.NoAccess, permMason);
+                        } else {
+                            addPerm(uid, Perm.ReadOnly, permMason);
+                        }
                     }
                 }
                 break;
@@ -1377,7 +1401,7 @@ export default class GameState {
         this.sendMemberList(this.channels.Living);
         const current_num = Object.keys(this.members).length;
         let send_text = format(this.langTxt.p1.current_count, {num : current_num, all : this.reqMemberNum});
-        if(current_num == this.reqMemberNum){
+        if (current_num == this.reqMemberNum) {
             send_text += "\n" + format(this.langTxt.p1.member_full, {cmd : this.langTxt.p1.cmd_start[0]});
         }
         this.channels.Living.send(send_text);
@@ -2562,7 +2586,7 @@ export default class GameState {
         if (interaction.customId != "cut_time") return;
         const isAdd = true; // TODO
         const liveNum =  Object.keys(this.members).reduce((acc, value) => { return acc + (this.members[value].isLiving?1:0);}, 0);
-        const reqRule = this.ruleSetting.day.skip_vote_rule;
+        const reqRule = this.ruleSetting.skip_vote_rule;
         const req = (reqRule == "majority") ? (liveNum + 1) / 2 | 0 : liveNum;
         if (!isAdd) {
             delete this.cutTimeMember[uid];

@@ -225,7 +225,7 @@ async function on_message(bid : number, message : Discord.Message){
     if (message.content.startsWith('^ping')) {
         message.channel.send("pong!"); return;
     }
-    if(bid == 1) return;
+    if (bid == 1) return;
     
     const message_channel = message.channel;
 
@@ -240,7 +240,7 @@ async function on_message(bid : number, message : Discord.Message){
                 return;
             }
             const u = clients[0].user;
-            if(message.guild && message.mentions.users.find(mu => mu.id == u.id)){
+            if (message.guild && message.mentions.users.find(mu => mu.id == u.id)) {
                 const guild1 = message.guild;
                 const ch = has_room_all_game_channel(paID, guild1.channels, SrvLangTxt)
                 if(ch != null){  
@@ -256,7 +256,7 @@ async function on_message(bid : number, message : Discord.Message){
         const cmd_idx = isThisCommand(message.content, SrvLangTxt.sys.cmd_make_room);
         if (cmd_idx >= 0) {
             const u = clients[0].user;
-            if(message.mentions.users.find(mu => mu.id == u.id) == null) return;
+            if (message.mentions.users.find(mu => mu.id == u.id) == null) return;
             const guild1_old = message.guild;
             if (guild1_old == null) return;
             
@@ -264,10 +264,10 @@ async function on_message(bid : number, message : Discord.Message){
             const category_name = sub_string ? sub_string : "game";  
             const ch = await make_room(message, category_name, SrvLangTxt);
             const guild1 = await guild1_old.fetch();
-            if(guild1 == null) return;
-            if(ch == null) return;
+            if (guild1 == null) return;
+            if (ch == null) return;
             const pa = ch.Living.parentId;
-            if(pa == null) return;
+            if (pa == null) return;
             Games[pa] = new GameState(clients, Games, guild1, ch, pa, SrvLangTxt, SrvRuleSet, ServerSetting);
             Games[pa].updateRoomsRW();
             ch.Living.send("<@!" + message.author.id + "> done!");
@@ -278,7 +278,7 @@ async function on_message(bid : number, message : Discord.Message){
         if (isThisCommand(message.content, SrvLangTxt.sys.cmd_delete_room) >= 0) {
             try {
                 const pa = message_channel.parentId;
-                if(pa == null) return;
+                if (pa == null) return;
                 const category = clients[0].channels.cache.get(pa) as Discord.CategoryChannel;
                 if (category) {
                     const manager = category.children;

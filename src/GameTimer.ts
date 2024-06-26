@@ -11,7 +11,7 @@ export function gameTimer3(
     console.log("start game timer");
     const gid = obj.gameId;
 
-    let stopped_time = 0;
+    obj.stopped_time = 0;
     let alert_times_map = alert_times.map(
         (atime) => (atime < obj.target_time - current_unix_time()) ? true : false
     );
