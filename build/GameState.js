@@ -137,6 +137,8 @@ class GameMember {
     livingDays = -1;
     avatar;
     nickname;
+    message_count = 0;
+    message_count_notifier = null;
     roleCmdInvokeNum = 0;
     constructor(m) {
         this.user = m.user;
@@ -159,6 +161,8 @@ class GameMember {
         this.voteTo = "";
         this.livingDays = -1;
         this.roleCmdInvokeNum = 0;
+        this.message_count = 0;
+        this.message_count_notifier = null;
     }
 }
 const Admin_alw = [
@@ -249,7 +253,7 @@ var InteractType;
     InteractType[InteractType["Seer"] = 4] = "Seer";
     InteractType[InteractType["Werewolf"] = 5] = "Werewolf";
     InteractType[InteractType["Dictator"] = 6] = "Dictator";
-    InteractType[InteractType["CutTime"] = 7] = "CutTime";
+    InteractType[InteractType["SkipPhase"] = 7] = "SkipPhase";
 })(InteractType || (InteractType = {}));
 var KickReason;
 (function (KickReason) {
@@ -280,7 +284,7 @@ class GameState {
     reqMemberNum = 0;
     interactControllers = [];
     reactedMember = Object.create(null);
-    cutTimeMember = Object.create(null);
+    skipPhaseMember = Object.create(null);
     p2CanForceStartGame;
     daytimeStartTime = 0;
     stopTimerRequest;
@@ -690,7 +694,8 @@ class GameState {
                 this.startP4_Daytime();
                 break;
             case exports.Phase.p4_Daytime:
-                this.startP5_Vote();
+                // this.startP5_Vote();
+                this.voteTimeup();
                 break;
             case exports.Phase.p5_Vote:
                 this.voteTimeup();
@@ -736,7 +741,7 @@ class GameState {
             addPerm(this.guild.members.me.id, 4 /* Perm.Admin */, permReadOnly);
         }
         this.channels.DebugLog.permissionOverwrites.set(permGMonly);
-        this.channels.GameLog.permissionOverwrites.set(permReadOnly); // or permReadOnly
+        this.channels.Vote.permissionOverwrites.set(permReadOnly); // or permReadOnly
         let permLiving = [];
         let permDead = [];
         let permWerewolf = [];
@@ -1397,8 +1402,8 @@ class GameState {
         this.channels.Living.send(this.langTxt.p2.start_preparations);
         this.sendRuleSummary(this.channels.Living);
         this.sendMemberList(this.channels.Living);
-        this.sendRuleSummary(this.channels.GameLog);
-        this.sendMemberList(this.channels.GameLog);
+        // this.sendRuleSummary(this.channels.GameLog);
+        // this.sendMemberList(this.channels.GameLog);
         this.sendMemberList(this.channels.Dead);
         await this.searchUserChannel(message);
         this.updateRoomsRW();
@@ -1915,6 +1920,7 @@ class GameState {
         this.phase = exports.Phase.p4_Daytime;
         this.dayNumber += 1;
         this.updateRoomsRW();
+        // String and Number of living people 
         let living = "";
         let living_num = 0;
         for (const uid in this.members) {
@@ -1924,6 +1930,7 @@ class GameState {
                 living_num += 1;
             }
         }
+        // Show cards of killed people
         if (this.killNext.length == 1) {
             const p = this.killNext[0];
             const uid = p[0];
@@ -1937,7 +1944,7 @@ class GameState {
                 fields: [{ name: (0, GameUtils_1.format)(this.langTxt.p4.living_and_num, { n: living_num }), value: living, inline: true }]
             });
             this.channels.Living.send({ embeds: [embed] });
-            this.channels.GameLog.send({ embeds: [embed] });
+            // this.channels.GameLog.send({embeds: [embed]});
         }
         else if (this.killNext.length === 0) {
             const embed = new Discord.EmbedBuilder({
@@ -1947,7 +1954,7 @@ class GameState {
                 fields: [{ name: (0, GameUtils_1.format)(this.langTxt.p4.living_and_num, { n: living_num }), value: living, inline: true }]
             });
             this.channels.Living.send({ embeds: [embed] });
-            this.channels.GameLog.send({ embeds: [embed] });
+            // this.channels.GameLog.send({embeds: [embed]});
         }
         else {
             const players = this.killNext;
@@ -1969,8 +1976,9 @@ class GameState {
                 fields: [{ name: (0, GameUtils_1.format)(this.langTxt.p4.living_and_num, { n: living_num }), value: living, inline: true }]
             });
             this.channels.Living.send({ embeds: [embed] });
-            this.channels.GameLog.send({ embeds: [embed] });
+            // this.channels.GameLog.send({embeds: [embed]});
         }
+        // Reset the list of killed people
         this.killNext = [];
         if (this.defaultRoles[exports.Role.Baker] > 0) {
             if (Object.keys(this.members).some(uid => this.members[uid].isLiving && this.members[uid].role == exports.Role.Baker)) {
@@ -1991,9 +1999,11 @@ class GameState {
                 this.channels.Living.send({ embeds: [embed] });
             }
         }
+        // Get end time of the day
         const daytime_length = Math.max(0, this.ruleSetting.day.length - this.ruleSetting.day.reduction_time * (this.dayNumber - 1));
         const now_unix_time = Util.current_unix_time();
         this.target_time = now_unix_time + daytime_length;
+        // Send notification of the end time of the day
         this.channels.Living.send({ embeds: [{
                     title: (0, GameUtils_1.format)(this.langTxt.p4.length_of_the_day, {
                         time: this.getTimeFormatFromSec(daytime_length),
@@ -2003,24 +2013,59 @@ class GameState {
                     color: this.langTxt.sys.system_color,
                 }] });
         this.daytimeStartTime = Date.now();
+        // Launch dictator controller
         await this.makeDictatorController();
+        // Reset some parameters
         this.voteNum = 0;
         this.runoffNum = 0;
         this.stopTimerRequest = false;
+        // Send notifications or buttons to the user channels
         for (let my_id in this.members) {
             if (!this.members[my_id].isLiving)
                 continue;
             const uch = this.members[my_id].uchannel;
             if (uch == null)
                 return this.err();
-            const component = new Discord.ActionRowBuilder().addComponents(Util.make_button("cut_time", this.langTxt.p4.cut_time_label, { style: "red" }));
-            const sent_message = await uch.send({
-                content: this.langTxt.sys.cuttime_desc,
-                components: [component]
+            // Buttons of the phase skip.
+            const skip_component = new Discord.ActionRowBuilder().addComponents(Util.make_button("skip_phase", this.langTxt.p4.skip_phase_label, { style: "red" }));
+            const skip_sent_message = await uch.send({
+                content: this.langTxt.sys.skip_phase_desc,
+                components: [skip_component]
             });
-            this.interactControllers[InteractType.CutTime][sent_message.id] = sent_message;
+            this.interactControllers[InteractType.SkipPhase][skip_sent_message.id] = skip_sent_message;
+            this.voteOpen(my_id, uch);
         }
+        // Launch the timer
         Timer.gameTimer3(this, this.ruleSetting.day.alert_times);
+    }
+    async voteOpen(uid, uch) {
+        // Buttons for the vote
+        // if (this.dictatorVoteMode != "" && this.dictatorVoteMode != my_id) continue;
+        this.members[uid].voteTo = "";
+        for (const tid in this.members) {
+            if (tid == uid)
+                continue;
+            if (!this.members[tid].isLiving)
+                continue;
+            this.members[uid].validVoteID.push(tid);
+        }
+        const ti = (this.voteNum == 0 ? "" : (0, GameUtils_1.format)(this.langTxt.p5.revote_times, { m: this.voteNum + 1 }));
+        let vote_buttons = [];
+        for (const tid in this.members) {
+            if (!this.members[tid].isLiving)
+                continue;
+            vote_buttons.push(Util.make_button(tid, this.members[tid].nickname, { style: "black" }));
+        }
+        const vote_components = Util.arrange_buttons(vote_buttons);
+        const vote_embed = new Discord.EmbedBuilder({
+            title: (0, GameUtils_1.format)(this.langTxt.p5.vote_title, { n: this.dayNumber, time: ti }),
+            color: this.langTxt.sys.system_color,
+        });
+        const vote_sent_message = await uch.send({
+            embeds: [vote_embed],
+            components: vote_components
+        });
+        this.interactControllers[InteractType.Vote][vote_sent_message.id] = vote_sent_message;
     }
     async makeDictatorController() {
         if (this.defaultRoles[exports.Role.Dictator] <= 0)
@@ -2072,9 +2117,8 @@ class GameState {
         this.dictatorVoteMode = interaction.user.id;
         await this.startP5_Vote();
     }
-    // Phase.p5_Vote. Do not use "this." in the function
+    // Phase.p5_Vote.
     async startP5_Vote() {
-        //! no use "this."
         if (this.voteNum === 0) {
             this.channels.Living.send({ embeds: [{
                         title: (0, GameUtils_1.format)(this.langTxt.p5.end_daytime, {
@@ -2086,7 +2130,7 @@ class GameState {
                     }] });
         }
         this.interactControllers[InteractType.Dictator] = Object.create(null);
-        this.cutTimeMember = Object.create(null);
+        this.skipPhaseMember = Object.create(null);
         this.phase = exports.Phase.p5_Vote;
         this.updateRoomsRW();
         for (const uid in this.members) {
@@ -2127,6 +2171,7 @@ class GameState {
         }
         this.stopTimerRequest = false;
         this.target_time = Util.current_unix_time() + this.ruleSetting.vote.length;
+        // Launch the timer
         Timer.gameTimer3(this, this.ruleSetting.vote.alert_times);
     }
     async voteTimeup() {
@@ -2201,7 +2246,7 @@ class GameState {
                 footer: { text: (0, GameUtils_1.format)(this.langTxt.p5.living_num, { n: living_num - 1 }) },
             });
             this.channels.Living.send({ embeds: [embed] });
-            this.channels.GameLog.send({ embeds: [embed] });
+            // this.channels.GameLog.send({embeds:[embed]});
             this.lastExecuted = eid;
             await this.kickMember(eid, KickReason.Vote);
         }
@@ -2213,7 +2258,7 @@ class GameState {
                 footer: { text: (0, GameUtils_1.format)(this.langTxt.p5.living_num, { n: living_num }) },
             });
             this.channels.Living.send({ embeds: [embed] });
-            this.channels.GameLog.send({ embeds: [embed] });
+            // this.channels.GameLog.send({embeds:[embed]});
             this.lastExecuted = "";
             await this.startP6_Night();
         }
@@ -2224,7 +2269,7 @@ class GameState {
                 color: this.langTxt.sys.system_color,
             });
             this.channels.Living.send({ embeds: [embed] });
-            this.channels.GameLog.send({ embeds: [embed] });
+            // this.channels.GameLog.send({embeds:[embed]});
             this.voteNum += 1;
             await this.startP5_Vote();
         }
@@ -2237,6 +2282,7 @@ class GameState {
             .setColor(this.langTxt.sys.system_color);
     }
     voteCheckInteract(interaction) {
+        console.log("voteCheckInteract");
         const uid = interaction.user.id;
         const tid = interaction.customId;
         if (tid == null)
@@ -2318,7 +2364,7 @@ class GameState {
                     color: this.langTxt.sys.system_color,
                 })] };
         this.channels.Living.send(nightComingEmbed);
-        this.cutTimeMember = Object.create(null);
+        this.skipPhaseMember = Object.create(null);
         for (let my_id in this.members) {
             this.members[my_id].voteTo = "";
             if (!this.members[my_id].isLiving)
@@ -2453,12 +2499,12 @@ class GameState {
             const uch = this.members[my_id].uchannel;
             if (uch == null)
                 return this.err();
-            const component = new Discord.ActionRowBuilder().addComponents(Util.make_button("cut_time", this.langTxt.p6.cut_time_label, { style: "red" }));
+            const component = new Discord.ActionRowBuilder().addComponents(Util.make_button("skip_phase", this.langTxt.p6.skip_phase_label, { style: "red" }));
             const sent_message = await uch.send({
-                content: this.langTxt.sys.cuttime_desc,
+                content: this.langTxt.sys.skip_phase_desc,
                 components: [component]
             });
-            this.interactControllers[InteractType.CutTime][sent_message.id] = sent_message;
+            this.interactControllers[InteractType.SkipPhase][sent_message.id] = sent_message;
         }
         this.stopTimerRequest = false;
         Timer.gameTimer3(this, this.ruleSetting.night.alert_times);
@@ -2534,34 +2580,34 @@ class GameState {
             interaction.reply({ embeds: [this.createVoteEmbed(author, this.langTxt.werewolf.accept, tid)] });
         }
     }
-    cutTimeCheck(interaction, cut_time_desc) {
+    skipPhaseCheck(interaction, skip_phase_desc) {
         const uid = interaction.user.id;
         const uch = this.members[uid].uchannel;
         if (uch == null)
             return this.err();
-        if (interaction.customId != "cut_time")
+        if (interaction.customId != "skip_phase")
             return;
         const isAdd = true; // TODO
         const liveNum = Object.keys(this.members).reduce((acc, value) => { return acc + (this.members[value].isLiving ? 1 : 0); }, 0);
         const reqRule = this.ruleSetting.skip_vote_rule;
         const req = (reqRule == "majority") ? (liveNum + 1) / 2 | 0 : liveNum;
         if (!isAdd) {
-            delete this.cutTimeMember[uid];
-            const now = Object.keys(this.cutTimeMember).length;
-            const txt = (0, GameUtils_1.format)(cut_time_desc, { now: now, req: req });
+            delete this.skipPhaseMember[uid];
+            const now = Object.keys(this.skipPhaseMember).length;
+            const txt = (0, GameUtils_1.format)(skip_phase_desc, { now: now, req: req });
             interaction.reply(txt);
             this.channels.Living.send(txt);
         }
         else {
-            this.cutTimeMember[uid] = 1;
-            const now = Object.keys(this.cutTimeMember).length;
-            const txt = (0, GameUtils_1.format)(this.langTxt.p4.cut_time_accept, { now: now, req: req });
+            this.skipPhaseMember[uid] = 1;
+            const now = Object.keys(this.skipPhaseMember).length;
+            const txt = (0, GameUtils_1.format)(this.langTxt.p4.skip_phase_accept, { now: now, req: req });
             interaction.reply(txt);
             this.channels.Living.send(txt);
             if (now >= req) {
                 this.is_skipped = true;
                 this.target_time = Math.min(Util.current_unix_time() + 10, this.target_time);
-                this.channels.Living.send((0, GameUtils_1.format)(this.langTxt.p4.cut_time_approved, { cut_time: this.target_time - Util.current_unix_time() }));
+                this.channels.Living.send((0, GameUtils_1.format)(this.langTxt.p4.skip_phase_approved, { skip_phase: this.target_time - Util.current_unix_time() }));
             }
         }
     }
@@ -2569,7 +2615,7 @@ class GameState {
         this.interactControllers[InteractType.Knight] = Object.create(null);
         this.interactControllers[InteractType.Seer] = Object.create(null);
         this.interactControllers[InteractType.Werewolf] = Object.create(null);
-        this.interactControllers[InteractType.CutTime] = Object.create(null);
+        this.interactControllers[InteractType.SkipPhase] = Object.create(null);
         let Guarded = [];
         for (const uid in this.members) {
             if (this.members[uid].role != exports.Role.Knight)
@@ -2716,7 +2762,7 @@ class GameState {
             fields: fields,
         });
         this.channels.Living.send({ embeds: [embed] });
-        this.channels.GameLog.send({ embeds: [embed] });
+        // this.channels.GameLog.send({embeds: [embed]});
         let MentionText = "";
         for (const mid in this.members) {
             MentionText += getUserMentionStrFromId(mid) + " ";
@@ -2868,6 +2914,13 @@ class GameState {
                     this.voteCheckInteract(interaction);
                     return;
                 }
+                else if (this.phase == exports.Phase.p4_Daytime) {
+                    console.log("here_here");
+                    if (this.members[uid].validVoteID.length == 0)
+                        return;
+                    this.voteCheckInteract(interaction);
+                    return;
+                }
                 return;
             }
             if (i == InteractType.Knight) {
@@ -2893,16 +2946,16 @@ class GameState {
                     this.nightWerewolfCheck(interaction);
                 }
             }
-            if (i == InteractType.CutTime) {
+            if (i == InteractType.SkipPhase) {
                 if (this.phase == exports.Phase.p4_Daytime) {
                     if (interaction.channelId != uch.id)
                         return;
-                    this.cutTimeCheck(interaction, this.langTxt.p4.cut_time_cancel);
+                    this.skipPhaseCheck(interaction, this.langTxt.p4.skip_phase_cancel);
                 }
                 else if (this.phase == exports.Phase.p6_Night) {
                     if (interaction.channelId != uch.id)
                         return;
-                    this.cutTimeCheck(interaction, this.langTxt.p6.cut_time_cancel);
+                    this.skipPhaseCheck(interaction, this.langTxt.p6.skip_phase_cancel);
                 }
             }
             if (i == InteractType.Dictator) {
@@ -3066,6 +3119,62 @@ class GameState {
                 if ((0, GameUtils_1.isThisCommand)(message.content, this.langTxt.p2.cmd_start_force) >= 0) {
                     this.forceStartGame();
                     return;
+                }
+            }
+            return;
+        }
+        if (this.phase == exports.Phase.p4_Daytime) {
+            const MAX_TALK_COUNT = 4;
+            const member_id = message.author.id;
+            const channel_id = message.channelId;
+            if (channel_id == this.channels.Living.id) {
+                if (Object.keys(this.members).find(k => k == member_id) != null) {
+                    this.members[member_id].message_count += 1;
+                    const uch = this.members[member_id].uchannel;
+                    const remaining_message_count = this.members[member_id].message_count - MAX_TALK_COUNT;
+                    if (remaining_message_count <= 0) {
+                        if (uch != null && message.channel.id == uch.id) {
+                            let permLivingNew = [];
+                            addPerm(this.guild.id, 1 /* Perm.ReadOnly */, permLivingNew);
+                            this.channels.Living.permissionOverwrites.set(permLivingNew);
+                            // this.reachedMaxMessageCount(member_id);
+                            // this.channels.Living.send({embeds: [embed]});
+                            this.channels.Living.send(GameUtils_1.format(this.langTxt.p4.reachedMaxMessageCount, { user: this.members[member_id].nickname }));
+                        }
+                    }
+                    else {
+                        if (uch != null && message.channel.id == uch.id) {
+                            /*
+                            uch.send({embeds: [{
+                                title: this.langTxt.p4.remainingMessageCount,
+                                description : all_cnt_txt + plyr_cnt_txt,
+                                color: this.langTxt.sys.system_color,
+                                fields : fields,
+                            }]});
+
+                            const embed = new Discord.EmbedBuilder({
+                                author    : {name: format(this.langTxt.p4.remainingMessageCount, {count : remaining_message_count})},
+                                title     : format(this.langTxt.p4.remainingMessageCount, {count : remaining_message_count}),
+                                color     : this.langTxt.sys.system_info_color,
+                                fields    : [{name : format(this.langTxt.p4.living_and_num, {n : living_num}), value: living, inline : true}]
+                            });
+                            */
+                            // this.remainingMessageCount(member_id, this.members[member_id].message_count);
+                            // Add a entry player to GameState.members and send a notification
+                            // let remaining_count_message : Discord.Message | null;
+                            const message_count_notifier = this.members[member_id].message_count_notifier;
+                            if (message_count_notifier == null) {
+                                console.log("No notifier");
+                            }
+                            else {
+                                message_count_notifier.edit({ embeds: [{
+                                            author: { name: (0, GameUtils_1.format)(this.langTxt.p4.remainingMessageCount, { count: remaining_message_count }) },
+                                            title: (0, GameUtils_1.format)(this.langTxt.p4.remainingMessageCount, { count: remaining_message_count }),
+                                            color: this.langTxt.sys.system_info_color,
+                                        }] });
+                            }
+                        }
+                    }
                 }
             }
             return;

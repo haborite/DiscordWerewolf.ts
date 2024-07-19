@@ -135,9 +135,9 @@ export type DevCommandType  = TsType<typeof devCommand>;
 export const LangTypeFormat = obj({
     game
     :obj({
-        room_Mason       : str,
         room_Werewolf    : str,
-        room_GameLog     : str,
+        room_Mason       : str,
+        room_Vote        : str,
         room_DebugLog    : str,
         room_Living      : str,
         room_Dead        : str,
@@ -164,9 +164,8 @@ export const LangTypeFormat = obj({
         cmd_stop_timer   : arr(str),
         cmd_resume_timer : arr(str),
         cmd_extend_time  : arr(str),
-        cmd_cut_time     : arr(str),
+        cmd_skip_phase   : arr(str),
         cmd_addtime      : arr(str),
-
 
         sym_err       : str,
         sym_warn      : str, 
@@ -177,7 +176,6 @@ export const LangTypeFormat = obj({
         sys_GM_list_title  : str,
         sys_Dev_list_title : str,
         sys_start_browser  : str,
-
 
         system_color      : num,
         system_err_color  : num,
@@ -224,7 +222,7 @@ export const LangTypeFormat = obj({
         welcome_dead : str,
         no_result    : str,
 
-        cuttime_desc : str,
+        skip_phase_desc : str,
     }),
     rule : obj({
         title : str,
@@ -407,27 +405,19 @@ export const LangTypeFormat = obj({
         living_and_num       : str,
         length_of_the_day    : str,
 
-        co_call_cuttime_title : str,
-        co_call_cuttime_desc  : str,
-
-        coming_out_sel_title    : str,
-        call_white_sel_title    : str,
-        call_black_sel_title    : str,
         role_list               : str,
         member_list             : str,
-        coming_out_open_title   : str,
-        call_white_open_title   : str,
-        call_black_open_title   : str,
-        call_white_cancel_title : str,
-        call_black_cancel_title : str,
         call_time               : str,
         publish_order           : str,
 
-        cut_time_label          : str,
-        cut_time_title          : str,
-        cut_time_accept         : str,
-        cut_time_cancel         : str,
-        cut_time_approved       : str,
+        skip_phase_label          : str,
+        skip_phase_title          : str,
+        skip_phase_accept         : str,
+        skip_phase_cancel         : str,
+        skip_phase_approved       : str,
+
+        remainingMessageCount  : str,
+        reachedMaxMessageCount : str,
     }),
 
     p5
@@ -466,11 +456,11 @@ export const LangTypeFormat = obj({
         phase_name    : str,
         start : str,
 
-        cut_time_label          : str,
-        cut_time_title          : str,
-        cut_time_accept         : str,
-        cut_time_cancel         : str,
-        cut_time_approved       : str,
+        skip_phase_label          : str,
+        skip_phase_title          : str,
+        skip_phase_accept         : str,
+        skip_phase_cancel         : str,
+        skip_phase_approved       : str,
     }),
 
     p7

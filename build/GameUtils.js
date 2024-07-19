@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateHashValueWithFormat = exports.arrange_components = exports.arrange_buttons = exports.make_button = exports.ParseRuleStr = exports.loadAndSetSysRuleSet = exports.getTextFromAttachedJson5 = exports.shuffle = exports.assertUnreachable = exports.isThisCommand = exports.format = exports.current_unix_time = exports.GameChannels = void 0;
+exports.getNicknameFromMem = exports.getNicknameFromMes = exports.getUserMentionStr = exports.getUserMentionStrFromId = exports.stringToEnum = exports.date_str = exports.hhmmss_str = exports.updateHashValueWithFormat = exports.arrange_components = exports.arrange_buttons = exports.make_button = exports.ParseRuleStr = exports.loadAndSetSysRuleSet = exports.getTextFromAttachedJson5 = exports.shuffle = exports.assertUnreachable = exports.isThisCommand = exports.format = exports.current_unix_time = exports.GameChannels = void 0;
 const Discord = __importStar(require("discord.js"));
 const fs = __importStar(require("fs"));
 const ts_json_validator_1 = require("ts-json-validator");
@@ -33,15 +33,15 @@ const path = __importStar(require("path"));
 class GameChannels {
     Mason;
     Werewolf;
-    GameLog;
+    Vote;
     DebugLog;
     Living;
     Dead;
     Audience;
-    constructor(aMason, aWerewolf, aGameLog, aDebugLog, aLiving, aDead, aAudience) {
+    constructor(aMason, aWerewolf, aVote, aDebugLog, aLiving, aDead, aAudience) {
         this.Mason = aMason;
         this.Werewolf = aWerewolf;
-        this.GameLog = aGameLog;
+        this.Vote = aVote;
         this.DebugLog = aDebugLog;
         this.Living = aLiving;
         this.Dead = aDead;
@@ -290,4 +290,35 @@ function updateHashValueWithFormat(attribute, value, runtimeType, hash) {
     return false;
 }
 exports.updateHashValueWithFormat = updateHashValueWithFormat;
+function hhmmss_str(unix_time_str) {
+    return "<t:" + unix_time_str + ":T>";
+}
+exports.hhmmss_str = hhmmss_str;
+function date_str(unix_time_str) {
+    return "<t:" + unix_time_str + ":D>";
+}
+exports.date_str = date_str;
+function stringToEnum(o) {
+    return o.reduce((accumulator, currentValue) => {
+        accumulator[currentValue] = currentValue;
+        return accumulator;
+    }, Object.create(null));
+}
+exports.stringToEnum = stringToEnum;
+function getUserMentionStrFromId(uid) {
+    return "<@!" + uid + ">";
+}
+exports.getUserMentionStrFromId = getUserMentionStrFromId;
+function getUserMentionStr(user) {
+    return "<@!" + user.id + ">";
+}
+exports.getUserMentionStr = getUserMentionStr;
+function getNicknameFromMes(message) {
+    return (message.member != null && message.member.nickname != null ? message.member.nickname : message.author.displayName);
+}
+exports.getNicknameFromMes = getNicknameFromMes;
+function getNicknameFromMem(mem) {
+    return (mem.nickname != null ? mem.nickname : mem.user.displayName);
+}
+exports.getNicknameFromMem = getNicknameFromMem;
 //# sourceMappingURL=GameUtils.js.map

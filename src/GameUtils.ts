@@ -10,7 +10,7 @@ export class GameChannels {
     
     Mason       : Discord.TextChannel;
     Werewolf    : Discord.TextChannel;
-    GameLog     : Discord.TextChannel;
+    Vote        : Discord.TextChannel;
     DebugLog    : Discord.TextChannel;
     Living      : Discord.TextChannel;
     Dead        : Discord.TextChannel;
@@ -19,7 +19,7 @@ export class GameChannels {
     constructor(
         aMason       : Discord.TextChannel,
         aWerewolf    : Discord.TextChannel,
-        aGameLog     : Discord.TextChannel,
+        aVote        : Discord.TextChannel,
         aDebugLog    : Discord.TextChannel,
         aLiving      : Discord.TextChannel,
         aDead        : Discord.TextChannel,
@@ -27,7 +27,7 @@ export class GameChannels {
     ) {
         this.Mason        = aMason;
         this.Werewolf     = aWerewolf;
-        this.GameLog      = aGameLog;
+        this.Vote         = aVote;
         this.DebugLog     = aDebugLog;
         this.Living       = aLiving;
         this.Dead         = aDead;
@@ -256,5 +256,33 @@ export function updateHashValueWithFormat(attribute : string, value : any, runti
     return false;
 }
 
+export function hhmmss_str(unix_time_str: number): string {
+    return "<t:" + unix_time_str + ":T>"
+}
 
+export function date_str(unix_time_str: number): string {
+    return "<t:" + unix_time_str + ":D>"
+}
 
+export function stringToEnum<T extends string>(o: T[]): {[K in T]: K} {
+    return o.reduce((accumulator, currentValue) => {
+      accumulator[currentValue] = currentValue;
+      return accumulator;
+    }, Object.create(null));
+}
+
+export function getUserMentionStrFromId(uid: string){
+    return "<@!" + uid + ">"
+}
+
+export function getUserMentionStr(user: Discord.User){
+    return "<@!" + user.id + ">"
+}
+
+export function getNicknameFromMes(message : Discord.Message){
+    return (message.member != null && message.member.nickname != null ? message.member.nickname : message.author.displayName);
+}
+
+export function getNicknameFromMem(mem : Discord.GuildMember){
+    return (mem.nickname != null ? mem.nickname : mem.user.displayName);
+}

@@ -1,7 +1,7 @@
 {
     game : {
         room_Werewolf    : "人狼役職",
-        room_GameLog     : "ゲームログ",
+        room_Vote        : "投票所",
         room_DebugLog    : "デバッグログ",
         room_Living      : "生存者チャット",
         room_LivingVoice : "生存者",
@@ -28,7 +28,7 @@
         cmd_stop_timer   : ["タイマー停止", "^stop", "^pause"],　// タイマー停止
         cmd_resume_timer : ["タイマー再開", "^resume"],        // タイマー再開
         cmd_extend_time  : ["^extend_time"],   // 時間延長希望
-        cmd_cut_time     : ["^cut_time"],      // 時短延長希望
+        cmd_skip_phase   : ["^skip_phase"],    // 時短延長希望
 
         cmd_addtime     : ["^extend"],
 
@@ -80,7 +80,7 @@
         welcome_dead   : "{user} さんは死亡し，霊界へやってきました．",
         no_result      : "（結果なし）",
 
-        cuttime_desc  : "生存者全員が時間短縮ボタンを押すことで、現在のフェーズを終わりにできます。",
+        skip_phase_desc: "生存者全員が時間短縮ボタンを押すことで、現在のフェーズをスキップできます。",
     },
 
     rule : {
@@ -308,28 +308,16 @@
         living_and_num    : "生存者({n}人)",
         length_of_the_day : "昼の議論時間は {time} です",
 
-
-        co_call_cuttime_title : "役職のカミングアウト、相手の白・黒コール",
-        co_call_cuttime_desc  : "役職ボタンを押すことで、役職のカミングアウトができます。\n緑のボタンを押すことで、相手を「白」コールできます。\n黒のボタンを押すことで、相手を「黒」コールできます。\n時間短縮ボタンを押すことで、議論の時間を終わりにできます。成立必要人数 : {req}人",
-
-        coming_out_sel_title  : "役職のカミングアウト",
-        call_white_sel_title  : "白コールする相手を選択",
-        call_black_sel_title  : "黒コールする相手を選択",
         role_list             : "役職一覧",
         member_list           : "プレイヤー",
-        coming_out_open_title : "{name} さんが「{role}」だと正体を明かしました",
-        call_white_open_title : "{name} さんが {trgt} さんを「白」だとコールしました",
-        call_black_open_title : "{name} さんが {trgt} さんを「黒」だとコールしました",
-        call_white_cancel_title : "{name} さんが {trgt} さんの「白」コールをキャンセルしました",
-        call_black_cancel_title : "{name} さんが {trgt} さんの「黒」コールをキャンセルしました",
         call_time             : "昼が始まってから {sec} 秒",
         publish_order         : "宣言順",
 
-        cut_time_label        : "時間短縮",
-        cut_time_title        : "時間短縮の希望を行うには :o: リアクションをしてください．成立必要人数 : {req}人",
-        cut_time_accept       : "時間短縮の希望を行いました．{now}/{req}人",
-        cut_time_cancel       : "時間短縮の希望をキャンセルしました．{now}/{req}人",
-        cut_time_approved     : "時間短縮が成立しました",
+        skip_phase_label        : "時間短縮",
+        skip_phase_title        : "時間短縮の希望を行うには :o: リアクションをしてください．成立必要人数 : {req}人",
+        skip_phase_accept       : "時間短縮の希望を行いました．{now}/{req}人",
+        skip_phase_cancel       : "時間短縮の希望をキャンセルしました．{now}/{req}人",
+        skip_phase_approved     : "時間短縮が成立しました",
     },
     p5 : {
         phase_name        : "{n}日目 投票",
