@@ -67,11 +67,11 @@ clients[0].on("ready", () => { console.log("Login! ", clients[0].user ? clients[
 function loadAndSetSysLangTxt(path, LangTxt) {
     const data = fs.readFileSync(path, 'utf-8');
     const json5 = JSON5.parse(data);
-    console.log(json5);
+    // console.log(json5);
     try {
-        console.log("here");
+        // console.log("here");
         const ret = (0, ts_json_validator_1.validate)(JsonType_1.LangTypeFormat, json5);
-        console.log(ret);
+        // console.log(ret);
         if (ret != null)
             LangTxt = ret;
         return ret;
@@ -198,9 +198,7 @@ function has_room_all_game_channel(catId, channels, SrvLangTxt) {
     if (aMason == null)
         return null;
     // const aGameLog     = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_GameLog"] , channels); if(aGameLog  == null) return null;
-    const aVote = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_Vote"], channels);
-    if (aVote == null)
-        return null;
+    // const aVote        = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_Vote"] , channels); if(aVote  == null) return null;
     const aDebugLog = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_DebugLog"], channels);
     if (aDebugLog == null)
         return null;
@@ -213,7 +211,9 @@ function has_room_all_game_channel(catId, channels, SrvLangTxt) {
     const aAudience = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_Audience"], channels);
     if (aAudience == null)
         return null;
-    return new GameUtils_1.GameChannels(aMason, aWerewolf, aVote, aDebugLog, aLiving, aDead, aAudience);
+    return new GameUtils_1.GameChannels(aMason, aWerewolf, 
+    // aVote,
+    aDebugLog, aLiving, aDead, aAudience);
 }
 async function make_room(message, category_name, SrvLangTxt) {
     // TODO : 未実装
@@ -224,7 +224,7 @@ async function make_room(message, category_name, SrvLangTxt) {
     // const category_name = "game2"
     let Mason = null;
     let Werewolf = null;
-    let Vote = null;
+    // let Vote        : Discord.TextChannel | null = null;
     let DebugLog = null;
     let Living = null;
     let Dead = null;
@@ -232,12 +232,14 @@ async function make_room(message, category_name, SrvLangTxt) {
     const cat = await guild.channels.create({ name: category_name, type: Discord.ChannelType.GuildCategory });
     Mason = await guild.channels.create({ name: SrvLangTxt.game.room_Mason, type: Discord.ChannelType.GuildText, parent: cat.id, position: 2 });
     Werewolf = await guild.channels.create({ name: SrvLangTxt.game.room_Werewolf, type: Discord.ChannelType.GuildText, parent: cat.id, position: 3 });
-    Vote = await guild.channels.create({ name: SrvLangTxt.game.room_Vote, type: Discord.ChannelType.GuildText, parent: cat.id, position: 4 });
+    // Vote        = await guild.channels.create({name: SrvLangTxt.game.room_Vote, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 4});
     DebugLog = await guild.channels.create({ name: SrvLangTxt.game.room_DebugLog, type: Discord.ChannelType.GuildText, parent: cat.id, position: 5 });
     Living = await guild.channels.create({ name: SrvLangTxt.game.room_Living, type: Discord.ChannelType.GuildText, parent: cat.id, position: 6 });
     Dead = await guild.channels.create({ name: SrvLangTxt.game.room_Dead, type: Discord.ChannelType.GuildText, parent: cat.id, position: 7 });
     Audience = await guild.channels.create({ name: SrvLangTxt.game.room_Audience, type: Discord.ChannelType.GuildText, parent: cat.id, position: 8 });
-    return new GameUtils_1.GameChannels(Mason, Werewolf, Vote, DebugLog, Living, Dead, Audience);
+    return new GameUtils_1.GameChannels(Mason, Werewolf, 
+    // Vote,
+    DebugLog, Living, Dead, Audience);
 }
 async function on_message(bid, message) {
     if (clients[0].user == null || message.author.id == clients[0].user.id)

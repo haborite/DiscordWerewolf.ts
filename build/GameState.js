@@ -741,7 +741,7 @@ class GameState {
             addPerm(this.guild.members.me.id, 4 /* Perm.Admin */, permReadOnly);
         }
         this.channels.DebugLog.permissionOverwrites.set(permGMonly);
-        this.channels.Vote.permissionOverwrites.set(permReadOnly); // or permReadOnly
+        // this.channels.Vote.permissionOverwrites.set(permReadOnly); // or permReadOnly
         let permLiving = [];
         let permDead = [];
         let permWerewolf = [];
@@ -1025,6 +1025,25 @@ class GameState {
             m_old.fetch().then(m => {
             });
         }
+    }
+    // Only for p4_Daytime
+    updateLivingRoomRW() {
+        if (this.guild == null)
+            return this.err();
+        let permLiving = [];
+        addPerm(this.guild.id, 1 /* Perm.ReadOnly */, permLiving);
+        for (const uid in this.members) {
+            if (this.members[uid].isLiving && this.members[uid].message_count > 0) {
+                addPerm(uid, 3 /* Perm.RW */, permLiving);
+            }
+            else {
+                addPerm(uid, 1 /* Perm.ReadOnly */, permLiving);
+            }
+        }
+        if (this.guild.members.me != null) {
+            addPerm(this.guild.members.me.id, 4 /* Perm.Admin */, permLiving);
+        }
+        this.channels.Living.permissionOverwrites.set(permLiving);
     }
     // Clear all joined members
     resetReactedMember() {
@@ -1917,6 +1936,7 @@ class GameState {
     }
     // Phase.p4_Daytime
     async startP4_Daytime() {
+        console.log("Start Daytime");
         this.phase = exports.Phase.p4_Daytime;
         this.dayNumber += 1;
         this.updateRoomsRW();
@@ -1926,6 +1946,7 @@ class GameState {
         for (const uid in this.members) {
             this.members[uid].validVoteID = [];
             if (this.members[uid].isLiving) {
+                this.members[uid].message_count = this.ruleSetting.daily_talk_limit;
                 living += this.members[uid].nickname + "\n";
                 living_num += 1;
             }
@@ -3124,55 +3145,36 @@ class GameState {
             return;
         }
         if (this.phase == exports.Phase.p4_Daytime) {
-            const MAX_TALK_COUNT = 4;
+            console.log("Someone speak at daytime.");
             const member_id = message.author.id;
             const channel_id = message.channelId;
             if (channel_id == this.channels.Living.id) {
+                console.log("here");
                 if (Object.keys(this.members).find(k => k == member_id) != null) {
-                    this.members[member_id].message_count += 1;
+                    this.members[member_id].message_count -= 1;
                     const uch = this.members[member_id].uchannel;
-                    const remaining_message_count = this.members[member_id].message_count - MAX_TALK_COUNT;
-                    if (remaining_message_count <= 0) {
-                        if (uch != null && message.channel.id == uch.id) {
-                            let permLivingNew = [];
-                            addPerm(this.guild.id, 1 /* Perm.ReadOnly */, permLivingNew);
-                            this.channels.Living.permissionOverwrites.set(permLivingNew);
-                            // this.reachedMaxMessageCount(member_id);
-                            // this.channels.Living.send({embeds: [embed]});
-                            this.channels.Living.send(GameUtils_1.format(this.langTxt.p4.reachedMaxMessageCount, { user: this.members[member_id].nickname }));
-                        }
+                    if (this.members[member_id].message_count <= 0) {
+                        console.log("here2");
+                        this.updateLivingRoomRW();
+                        this.channels.Living.send(GameUtils_1.format(this.langTxt.p4.reachedMaxMessageCount, { user: this.members[member_id].nickname }));
                     }
-                    else {
-                        if (uch != null && message.channel.id == uch.id) {
-                            /*
-                            uch.send({embeds: [{
-                                title: this.langTxt.p4.remainingMessageCount,
-                                description : all_cnt_txt + plyr_cnt_txt,
-                                color: this.langTxt.sys.system_color,
-                                fields : fields,
-                            }]});
-
-                            const embed = new Discord.EmbedBuilder({
-                                author    : {name: format(this.langTxt.p4.remainingMessageCount, {count : remaining_message_count})},
-                                title     : format(this.langTxt.p4.remainingMessageCount, {count : remaining_message_count}),
-                                color     : this.langTxt.sys.system_info_color,
-                                fields    : [{name : format(this.langTxt.p4.living_and_num, {n : living_num}), value: living, inline : true}]
-                            });
-                            */
-                            // this.remainingMessageCount(member_id, this.members[member_id].message_count);
-                            // Add a entry player to GameState.members and send a notification
-                            // let remaining_count_message : Discord.Message | null;
-                            const message_count_notifier = this.members[member_id].message_count_notifier;
-                            if (message_count_notifier == null) {
-                                console.log("No notifier");
-                            }
-                            else {
-                                message_count_notifier.edit({ embeds: [{
-                                            author: { name: (0, GameUtils_1.format)(this.langTxt.p4.remainingMessageCount, { count: remaining_message_count }) },
-                                            title: (0, GameUtils_1.format)(this.langTxt.p4.remainingMessageCount, { count: remaining_message_count }),
-                                            color: this.langTxt.sys.system_info_color,
-                                        }] });
-                            }
+                    if (uch != null) {
+                        const message_count_notifier = this.members[member_id].message_count_notifier;
+                        if (message_count_notifier == null) {
+                            console.log("No notifier");
+                            const notifier_message = await uch.send({ embeds: [{
+                                        author: { name: (0, GameUtils_1.format)(this.langTxt.p4.remainingMessageCount, { count: this.members[member_id].message_count }) },
+                                        title: (0, GameUtils_1.format)(this.langTxt.p4.remainingMessageCount, { count: this.members[member_id].message_count }),
+                                        color: this.langTxt.sys.system_info_color,
+                                    }] });
+                            this.members[member_id].message_count_notifier = notifier_message;
+                        }
+                        else {
+                            message_count_notifier.edit({ embeds: [{
+                                        author: { name: (0, GameUtils_1.format)(this.langTxt.p4.remainingMessageCount, { count: this.members[member_id].message_count }) },
+                                        title: (0, GameUtils_1.format)(this.langTxt.p4.remainingMessageCount, { count: this.members[member_id].message_count }),
+                                        color: this.langTxt.sys.system_info_color,
+                                    }] });
                         }
                     }
                 }

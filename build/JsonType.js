@@ -438,6 +438,7 @@ exports.RuleTypeFormat = (0, ts_json_validator_1.obj)({
     confirmation_sec: ts_json_validator_1.num,
     wish_role_rand_weight: ts_json_validator_1.num,
     wish_role_time: ts_json_validator_1.num,
+    daily_talk_limit: ts_json_validator_1.num,
     skip_vote_rule: (0, ts_json_validator_1.union)((0, ts_json_validator_1.literal)('all'), (0, ts_json_validator_1.literal)('majority')),
     first_night: (0, ts_json_validator_1.obj)({
         first_night_time: ts_json_validator_1.num,

@@ -43,11 +43,9 @@ clients[0].on("ready", () => {console.log("Login! ", clients[0].user ? clients[0
 function loadAndSetSysLangTxt(path : string, LangTxt ?: LangType){
     const data = fs.readFileSync(path, 'utf-8');
     const json5 = JSON5.parse(data);
-    console.log(json5);
+    // console.log(json5);
     try {
-        console.log("here");
         const ret = validate(LangTypeFormat, json5);
-        console.log(ret);
         if (ret != null) LangTxt = ret;
         return ret;
     } catch (e) {
@@ -163,7 +161,7 @@ function has_room_all_game_channel(catId : string, channels : Discord.GuildChann
     const aWerewolf    = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_Werewolf"], channels); if(aWerewolf == null) return null;
     const aMason       = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_Mason"]   , channels); if(aMason    == null) return null;
     // const aGameLog     = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_GameLog"] , channels); if(aGameLog  == null) return null;
-    const aVote        = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_Vote"] , channels); if(aVote  == null) return null;
+    // const aVote        = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_Vote"] , channels); if(aVote  == null) return null;
     const aDebugLog    = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_DebugLog"], channels); if(aDebugLog == null) return null;
     const aLiving      = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_Living"]  , channels); if(aLiving   == null) return null;
     const aDead        = has_room_all_game_channel_support_t(catId, SrvLangTxt['game']["room_Dead"]    , channels); if(aDead     == null) return null;
@@ -171,7 +169,7 @@ function has_room_all_game_channel(catId : string, channels : Discord.GuildChann
     return new GameChannels(
         aMason,
         aWerewolf,
-        aVote,
+        // aVote,
         aDebugLog,
         aLiving,
         aDead,
@@ -189,7 +187,7 @@ async function make_room(message: Discord.Message, category_name: string, SrvLan
     // const category_name = "game2"
     let Mason       : Discord.TextChannel | null = null;
     let Werewolf    : Discord.TextChannel | null = null;
-    let Vote        : Discord.TextChannel | null = null;
+    // let Vote        : Discord.TextChannel | null = null;
     let DebugLog    : Discord.TextChannel | null = null;
     let Living      : Discord.TextChannel | null = null;
     let Dead        : Discord.TextChannel | null = null;
@@ -198,7 +196,7 @@ async function make_room(message: Discord.Message, category_name: string, SrvLan
     const cat = await guild.channels.create({name: category_name, type : Discord.ChannelType.GuildCategory});
     Mason       = await guild.channels.create({name: SrvLangTxt.game.room_Mason, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 2});
     Werewolf    = await guild.channels.create({name: SrvLangTxt.game.room_Werewolf, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 3});
-    Vote        = await guild.channels.create({name: SrvLangTxt.game.room_Vote, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 4});
+    // Vote        = await guild.channels.create({name: SrvLangTxt.game.room_Vote, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 4});
     DebugLog    = await guild.channels.create({name: SrvLangTxt.game.room_DebugLog, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 5});
     Living      = await guild.channels.create({name: SrvLangTxt.game.room_Living, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 6});
     Dead        = await guild.channels.create({name: SrvLangTxt.game.room_Dead, type : Discord.ChannelType.GuildText,  parent : cat.id, position : 7});
@@ -206,7 +204,7 @@ async function make_room(message: Discord.Message, category_name: string, SrvLan
     return new GameChannels(
         Mason,
         Werewolf,
-        Vote,
+        // Vote,
         DebugLog,
         Living,
         Dead,

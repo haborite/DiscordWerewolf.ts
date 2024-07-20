@@ -54,6 +54,8 @@
     wish_role_rand_weight : 3,
     wish_role_time        : 30,
 
+    daily_talk_limit      : 3,
+
     skip_vote_rule : "majority",
 
     first_night : {

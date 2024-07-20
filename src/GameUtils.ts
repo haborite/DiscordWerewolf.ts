@@ -10,7 +10,7 @@ export class GameChannels {
     
     Mason       : Discord.TextChannel;
     Werewolf    : Discord.TextChannel;
-    Vote        : Discord.TextChannel;
+    // Vote        : Discord.TextChannel;
     DebugLog    : Discord.TextChannel;
     Living      : Discord.TextChannel;
     Dead        : Discord.TextChannel;
@@ -19,7 +19,7 @@ export class GameChannels {
     constructor(
         aMason       : Discord.TextChannel,
         aWerewolf    : Discord.TextChannel,
-        aVote        : Discord.TextChannel,
+        // aVote        : Discord.TextChannel,
         aDebugLog    : Discord.TextChannel,
         aLiving      : Discord.TextChannel,
         aDead        : Discord.TextChannel,
@@ -27,7 +27,7 @@ export class GameChannels {
     ) {
         this.Mason        = aMason;
         this.Werewolf     = aWerewolf;
-        this.Vote         = aVote;
+        // this.Vote         = aVote;
         this.DebugLog     = aDebugLog;
         this.Living       = aLiving;
         this.Dead         = aDead;

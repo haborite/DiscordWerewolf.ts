@@ -33,15 +33,17 @@ const path = __importStar(require("path"));
 class GameChannels {
     Mason;
     Werewolf;
-    Vote;
+    // Vote        : Discord.TextChannel;
     DebugLog;
     Living;
     Dead;
     Audience;
-    constructor(aMason, aWerewolf, aVote, aDebugLog, aLiving, aDead, aAudience) {
+    constructor(aMason, aWerewolf, 
+    // aVote        : Discord.TextChannel,
+    aDebugLog, aLiving, aDead, aAudience) {
         this.Mason = aMason;
         this.Werewolf = aWerewolf;
-        this.Vote = aVote;
+        // this.Vote         = aVote;
         this.DebugLog = aDebugLog;
         this.Living = aLiving;
         this.Dead = aDead;

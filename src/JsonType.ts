@@ -543,6 +543,8 @@ export const RuleTypeFormat = obj({
     wish_role_rand_weight : num,
     wish_role_time        : num,
 
+    daily_talk_limit      : num,
+
     skip_vote_rule : union(
         literal('all' as const),
         literal('majority' as const),
