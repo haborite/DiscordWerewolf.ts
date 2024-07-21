@@ -211,6 +211,7 @@ export const LangTypeFormat = obj({
         wish_start_datetime_desc    : str,
         role_assign_datetime_desc   : str,
         daytime_start_datetime_desc : str,
+        night_start_datetime_desc   : str,
 
         time_formatMS     : str,
         time_formatM      : str,

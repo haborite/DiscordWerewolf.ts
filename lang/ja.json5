@@ -72,8 +72,9 @@
 
         scheduled_start             : "開始時間がスケジュールされました.",
         wish_start_datetime_desc    : "役職希望受付開始 : {datetime}",
-        role_assign_datetime_desc   : "役職配布開始 : {datetime}",
-        daytime_start_datetime_desc : "初日議論開始 : {datetime}",
+        role_assign_datetime_desc   : "役職配布 : {datetime}",
+        daytime_start_datetime_desc : "昼時間開始（1日目） : {datetime}",
+        night_start_datetime_desc   : "夜時間開始（1日目） : {datetime}",
 
         time_formatMS  : "{min}分{sec}秒",
         time_formatM   : "{min}分",
@@ -197,7 +198,7 @@
     role_descs : {
         Villager       : "なんの能力も持たないただの人です．",
         Seer           : "毎晩，生存者1人を「人狼」か「人狼でない」かを占うことが出来ます．",
-        Priest         : "昨晩の処刑者が「人狼」か「人狼でない」かを知ることが出来ます．",
+        Priest         : "前日の晩の処刑者が「人狼」か「人狼でない」かを知ることが出来ます．",
         Knight         : "自分以外の生存者を指定して人狼の襲撃から守ることができます．しかし自分自身は守れません．",
         Werewolf       : "毎晩，生存者1人を襲撃することが出来ます",
         Traitor        : "人狼陣営が勝利することで自身も勝利できます．",

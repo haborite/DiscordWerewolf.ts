@@ -69,9 +69,7 @@ function loadAndSetSysLangTxt(path, LangTxt) {
     const json5 = JSON5.parse(data);
     // console.log(json5);
     try {
-        // console.log("here");
         const ret = (0, ts_json_validator_1.validate)(JsonType_1.LangTypeFormat, json5);
-        // console.log(ret);
         if (ret != null)
             LangTxt = ret;
         return ret;

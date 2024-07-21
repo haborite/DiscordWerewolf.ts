@@ -712,7 +712,7 @@ class GameState {
     async start_0Unstarted() {
         console.log("Phase 0: Unstarted");
         this.phase = exports.Phase.p0_UnStarted;
-        this.sendRuleSummary(this.channels.Living);
+        // this.sendRuleSummary(this.channels.Living);
     }
     // Phase 1 start
     async start_1Wanted() {
@@ -1356,10 +1356,13 @@ class GameState {
         const role_assign_datetime = new Date(role_assign_unixtime * 1000);
         const daytime_start_unixtime = role_assign_unixtime + this.ruleSetting.first_night.first_night_time;
         const daytime_start_datetime = new Date(daytime_start_unixtime * 1000);
+        const night_start_unixtime = daytime_start_unixtime + this.ruleSetting.day.length;
+        const night_start_datetime = new Date(night_start_unixtime * 1000);
         const wish_start_datetime_desc = (0, GameUtils_1.format)(this.langTxt.sys.wish_start_datetime_desc, { datetime: scheduled_datetime.toLocaleString("ja-JP") });
         const role_assign_datetime_desc = (0, GameUtils_1.format)(this.langTxt.sys.role_assign_datetime_desc, { datetime: role_assign_datetime.toLocaleString("ja-JP") });
         const daytime_start_datetime_desc = (0, GameUtils_1.format)(this.langTxt.sys.daytime_start_datetime_desc, { datetime: daytime_start_datetime.toLocaleString("ja-JP") });
-        let schedule_desc = role_assign_datetime_desc + "\n" + daytime_start_datetime_desc;
+        const night_start_datetime_desc = (0, GameUtils_1.format)(this.langTxt.sys.night_start_datetime_desc, { datetime: night_start_datetime.toLocaleString("ja-JP") });
+        let schedule_desc = role_assign_datetime_desc + "\n" + daytime_start_datetime_desc + "\n" + night_start_datetime_desc;
         if (this.ruleSetting.wish_role_time > 0) {
             schedule_desc = wish_start_datetime_desc + "\n" + schedule_desc;
         }
@@ -1940,6 +1943,7 @@ class GameState {
         this.phase = exports.Phase.p4_Daytime;
         this.dayNumber += 1;
         this.updateRoomsRW();
+        this.skipPhaseMember = Object.create(null);
         // String and Number of living people 
         let living = "";
         let living_num = 0;
@@ -2034,6 +2038,13 @@ class GameState {
                     color: this.langTxt.sys.system_color,
                 }] });
         this.daytimeStartTime = Date.now();
+        // Buttons of the phase skip.
+        const skip_component = new Discord.ActionRowBuilder().addComponents(Util.make_button("skip_phase", this.langTxt.p4.skip_phase_label, { style: "red" }));
+        const skip_sent_message = await this.channels.Living.send({
+            content: this.langTxt.sys.skip_phase_desc,
+            components: [skip_component]
+        });
+        this.interactControllers[InteractType.SkipPhase][skip_sent_message.id] = skip_sent_message;
         // Launch dictator controller
         await this.makeDictatorController();
         // Reset some parameters
@@ -2047,13 +2058,6 @@ class GameState {
             const uch = this.members[my_id].uchannel;
             if (uch == null)
                 return this.err();
-            // Buttons of the phase skip.
-            const skip_component = new Discord.ActionRowBuilder().addComponents(Util.make_button("skip_phase", this.langTxt.p4.skip_phase_label, { style: "red" }));
-            const skip_sent_message = await uch.send({
-                content: this.langTxt.sys.skip_phase_desc,
-                components: [skip_component]
-            });
-            this.interactControllers[InteractType.SkipPhase][skip_sent_message.id] = skip_sent_message;
             this.voteOpen(my_id, uch);
         }
         // Launch the timer
@@ -2073,6 +2077,8 @@ class GameState {
         const ti = (this.voteNum == 0 ? "" : (0, GameUtils_1.format)(this.langTxt.p5.revote_times, { m: this.voteNum + 1 }));
         let vote_buttons = [];
         for (const tid in this.members) {
+            if (tid == uid)
+                continue;
             if (!this.members[tid].isLiving)
                 continue;
             vote_buttons.push(Util.make_button(tid, this.members[tid].nickname, { style: "black" }));
@@ -2514,23 +2520,18 @@ class GameState {
                 }
             }
         }
-        for (let my_id in this.members) {
-            if (!this.members[my_id].isLiving)
-                continue;
-            const uch = this.members[my_id].uchannel;
-            if (uch == null)
-                return this.err();
-            const component = new Discord.ActionRowBuilder().addComponents(Util.make_button("skip_phase", this.langTxt.p6.skip_phase_label, { style: "red" }));
-            const sent_message = await uch.send({
-                content: this.langTxt.sys.skip_phase_desc,
-                components: [component]
-            });
-            this.interactControllers[InteractType.SkipPhase][sent_message.id] = sent_message;
-        }
+        // Skip button
+        const skip_component = new Discord.ActionRowBuilder().addComponents(Util.make_button("skip_phase", this.langTxt.p6.skip_phase_label, { style: "red" }));
+        const sent_skip_message = await this.channels.Living.send({
+            content: this.langTxt.sys.skip_phase_desc,
+            components: [skip_component]
+        });
+        this.interactControllers[InteractType.SkipPhase][sent_skip_message.id] = sent_skip_message;
         this.stopTimerRequest = false;
         Timer.gameTimer3(this, this.ruleSetting.night.alert_times);
     }
     nightKnightCheck(interaction) {
+        console.log("knight CHECK");
         const tid = Object.keys(this.members).find(mid => mid == interaction.customId);
         if (tid == null)
             return;
@@ -2539,6 +2540,7 @@ class GameState {
         if (uch == null)
             return this.err();
         if (this.members[uid].validVoteID.find(i => i == tid)) {
+            console.log("knight here");
             const change = this.members[uid].voteTo != "";
             const role = exports.Role.Knight;
             const author = {
@@ -2602,10 +2604,10 @@ class GameState {
         }
     }
     skipPhaseCheck(interaction, skip_phase_desc) {
+        console.log("skipPhaseCheck");
         const uid = interaction.user.id;
-        const uch = this.members[uid].uchannel;
-        if (uch == null)
-            return this.err();
+        // const uch = this.members[uid].uchannel;
+        // if (uch == null) return this.err();
         if (interaction.customId != "skip_phase")
             return;
         const isAdd = true; // TODO
@@ -2624,7 +2626,7 @@ class GameState {
             const now = Object.keys(this.skipPhaseMember).length;
             const txt = (0, GameUtils_1.format)(this.langTxt.p4.skip_phase_accept, { now: now, req: req });
             interaction.reply(txt);
-            this.channels.Living.send(txt);
+            // this.channels.Living.send(txt);
             if (now >= req) {
                 this.is_skipped = true;
                 this.target_time = Math.min(Util.current_unix_time() + 10, this.target_time);
@@ -2936,7 +2938,6 @@ class GameState {
                     return;
                 }
                 else if (this.phase == exports.Phase.p4_Daytime) {
-                    console.log("here_here");
                     if (this.members[uid].validVoteID.length == 0)
                         return;
                     this.voteCheckInteract(interaction);
@@ -2946,6 +2947,7 @@ class GameState {
             }
             if (i == InteractType.Knight) {
                 if (this.phase == exports.Phase.p6_Night) {
+                    console.log("for debug");
                     if (interaction.channelId != uch.id)
                         return;
                     this.nightKnightCheck(interaction);
@@ -2969,13 +2971,11 @@ class GameState {
             }
             if (i == InteractType.SkipPhase) {
                 if (this.phase == exports.Phase.p4_Daytime) {
-                    if (interaction.channelId != uch.id)
-                        return;
+                    // if (interaction.channelId != uch.id) return;
                     this.skipPhaseCheck(interaction, this.langTxt.p4.skip_phase_cancel);
                 }
                 else if (this.phase == exports.Phase.p6_Night) {
-                    if (interaction.channelId != uch.id)
-                        return;
+                    // if (interaction.channelId != uch.id) return;
                     this.skipPhaseCheck(interaction, this.langTxt.p6.skip_phase_cancel);
                 }
             }
@@ -3149,12 +3149,10 @@ class GameState {
             const member_id = message.author.id;
             const channel_id = message.channelId;
             if (channel_id == this.channels.Living.id) {
-                console.log("here");
                 if (Object.keys(this.members).find(k => k == member_id) != null) {
                     this.members[member_id].message_count -= 1;
                     const uch = this.members[member_id].uchannel;
                     if (this.members[member_id].message_count <= 0) {
-                        console.log("here2");
                         this.updateLivingRoomRW();
                         this.channels.Living.send(GameUtils_1.format(this.langTxt.p4.reachedMaxMessageCount, { user: this.members[member_id].nickname }));
                     }

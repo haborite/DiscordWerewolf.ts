@@ -176,6 +176,7 @@ exports.LangTypeFormat = (0, ts_json_validator_1.obj)({
         wish_start_datetime_desc: ts_json_validator_1.str,
         role_assign_datetime_desc: ts_json_validator_1.str,
         daytime_start_datetime_desc: ts_json_validator_1.str,
+        night_start_datetime_desc: ts_json_validator_1.str,
         time_formatMS: ts_json_validator_1.str,
         time_formatM: ts_json_validator_1.str,
         time_formatS: ts_json_validator_1.str,
